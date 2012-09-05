@@ -25,5 +25,6 @@ public interface Platform {
      * @return
      */
     public long currentTimeMillis();
-
+    
+    public File getUserHome();
 }
