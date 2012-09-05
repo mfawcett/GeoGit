@@ -31,4 +31,9 @@ public class DefaultPlatform implements Platform {
         return System.currentTimeMillis();
     }
 
+	@Override
+	public File getUserHome() {
+		return new File(System.getProperty("user.home"));
+	}
+
 }
