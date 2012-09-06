@@ -1,12 +1,13 @@
-package org.geogit.cli;
+package org.geogit.storage;
 
 import java.io.File;
 
+import org.geogit.api.Platform;
 import org.ini4j.Wini;
 
 public class IniConfigDatabase implements ConfigDatabase {
 
-	private GeogitCLI cli;
+	private Platform platform;
 	
 	private class SectionOptionPair {
 		String section;
@@ -19,17 +20,17 @@ public class IniConfigDatabase implements ConfigDatabase {
 		}
 	}
 	
-	public IniConfigDatabase(GeogitCLI cli)
+	public IniConfigDatabase(Platform platform)
 	{
-		this.cli = cli;
+		this.platform = platform;
 	}
 
 	private File config() {
-		return cli.getGeogit().getRepository().getRepositoryHome();
+		return null;
 	}
 	
 	private File globalConfig() {
-		return cli.getPlatform().getUserHome();
+		return platform.getUserHome();
 	}
 	
 	private String get(String key, File file) {

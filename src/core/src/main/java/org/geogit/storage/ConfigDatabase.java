@@ -1,4 +1,4 @@
-package org.geogit.cli;
+package org.geogit.storage;
 
 public interface ConfigDatabase {
 

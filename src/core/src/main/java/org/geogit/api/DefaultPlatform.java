@@ -46,8 +46,7 @@ public class DefaultPlatform implements Platform {
 
 	@Override
 	public File getUserHome() {
-		// TODO Auto-generated method stub
-		return null;
+		return new File(System.getProperty("user.home"));
 	}
 
 }
