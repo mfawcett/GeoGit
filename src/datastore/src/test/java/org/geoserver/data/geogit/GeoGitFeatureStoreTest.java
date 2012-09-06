@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.geogit.api.GeoGIT;
+import org.geogit.test.RepositoryTestCase;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.DefaultTransaction;
 import org.geotools.data.Transaction;
@@ -39,10 +40,9 @@ import org.opengis.filter.Id;
 import org.opengis.filter.identity.FeatureId;
 import org.opengis.filter.identity.ResourceId;
 
-public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
+public class GeoGitFeatureStoreTest extends RepositoryTestCase {
 
-    private static final FilterFactory2 ff = CommonFactoryFinder
-            .getFilterFactory2(null);
+    private static final FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(null);
 
     private GeoGitDataStore dataStore;
 
@@ -51,18 +51,17 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
     private GeoGitFeatureStore lines;
 
     @Override
-    protected void setUpChild() throws Exception {
+    protected void setUpInternal() throws Exception {
         dataStore = new GeoGitDataStore(repo);
         dataStore.createSchema(super.pointsType);
         dataStore.createSchema(super.linesType);
 
-        points = (GeoGitFeatureStore) dataStore
-                .getFeatureSource(pointsTypeName);
+        points = (GeoGitFeatureStore) dataStore.getFeatureSource(pointsTypeName);
         lines = (GeoGitFeatureStore) dataStore.getFeatureSource(linesTypeName);
     }
-    
+
     @Override
-    protected void tearDownChild() throws Exception {
+    protected void tearDownInternal() throws Exception {
         dataStore = null;
         points = null;
         lines = null;
@@ -71,9 +70,8 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
     public void testAddFeatures() throws Exception {
 
         FeatureCollection<SimpleFeatureType, SimpleFeature> collection;
-        collection = DataUtilities.collection(Arrays.asList(
-                (SimpleFeature) points1, (SimpleFeature) points2,
-                (SimpleFeature) points3));
+        collection = DataUtilities.collection(Arrays.asList((SimpleFeature) points1,
+                (SimpleFeature) points2, (SimpleFeature) points3));
 
         try {
             points.addFeatures(collection);
@@ -82,8 +80,7 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
             assertTrue(e.getMessage().contains("AUTO_COMMIT"));
         }
 
-        final Set<String> insertedFids = new HashSet<String>(Arrays.asList(
-                idP1, idP2, idP3));
+        final Set<String> insertedFids = new HashSet<String>(Arrays.asList(idP1, idP2, idP3));
 
         Transaction tx = new DefaultTransaction();
         points.setTransaction(tx);
@@ -101,13 +98,11 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
             // assert transaction isolation
 
             assertEquals(3, points.getFeatures().size());
-            assertEquals(0, dataStore.getFeatureSource(pointsTypeName)
-                    .getFeatures().size());
+            assertEquals(0, dataStore.getFeatureSource(pointsTypeName).getFeatures().size());
 
             tx.commit();
 
-            assertEquals(3, dataStore.getFeatureSource(pointsTypeName)
-                    .getFeatures().size());
+            assertEquals(3, dataStore.getFeatureSource(pointsTypeName).getFeatures().size());
         } catch (Exception e) {
             tx.rollback();
             throw e;
@@ -121,9 +116,8 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
         assertTrue(points.getQueryCapabilities().isUseProvidedFIDSupported());
 
         FeatureCollection<SimpleFeatureType, SimpleFeature> collection;
-        collection = DataUtilities.collection(Arrays.asList(
-                (SimpleFeature) points1, (SimpleFeature) points2,
-                (SimpleFeature) points3));
+        collection = DataUtilities.collection(Arrays.asList((SimpleFeature) points1,
+                (SimpleFeature) points2, (SimpleFeature) points3));
 
         Transaction tx = new DefaultTransaction();
         points.setTransaction(tx);
@@ -161,25 +155,13 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
 
             tx.commit();
 
-            assertEquals(1,
-                    points.getFeatures(ff.id(Collections.singleton(fid1)))
-                            .size());
-            assertEquals(1,
-                    points.getFeatures(ff.id(Collections.singleton(fid2)))
-                            .size());
-            assertEquals(1,
-                    points.getFeatures(ff.id(Collections.singleton(fid3)))
-                            .size());
+            assertEquals(1, points.getFeatures(ff.id(Collections.singleton(fid1))).size());
+            assertEquals(1, points.getFeatures(ff.id(Collections.singleton(fid2))).size());
+            assertEquals(1, points.getFeatures(ff.id(Collections.singleton(fid3))).size());
 
-            assertEquals(1,
-                    points.getFeatures(ff.id(Collections.singleton(fid11)))
-                            .size());
-            assertEquals(1,
-                    points.getFeatures(ff.id(Collections.singleton(fid21)))
-                            .size());
-            assertEquals(1,
-                    points.getFeatures(ff.id(Collections.singleton(fid31)))
-                            .size());
+            assertEquals(1, points.getFeatures(ff.id(Collections.singleton(fid11))).size());
+            assertEquals(1, points.getFeatures(ff.id(Collections.singleton(fid21))).size());
+            assertEquals(1, points.getFeatures(ff.id(Collections.singleton(fid31))).size());
 
         } catch (Exception e) {
             tx.rollback();
@@ -202,26 +184,24 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
         points.setTransaction(tx);
         try {
             // initial value
-            assertEquals("StringProp1_1", points.getFeatures(filter).iterator()
-                    .next().getAttribute("sp"));
+            assertEquals("StringProp1_1", points.getFeatures(filter).iterator().next()
+                    .getAttribute("sp"));
             // modify
             points.modifyFeatures("sp", "modified", filter);
             // modified value before commit
-            assertEquals("modified", points.getFeatures(filter).iterator()
-                    .next().getAttribute("sp"));
+            assertEquals("modified", points.getFeatures(filter).iterator().next()
+                    .getAttribute("sp"));
             // unmodified value before commit on another store instance (tx
             // isolation)
-            assertEquals(
-                    "StringProp1_1",
-                    dataStore.getFeatureSource(pointsTypeName)
-                            .getFeatures(filter).iterator().next()
-                            .getAttribute("sp"));
+            assertEquals("StringProp1_1",
+                    dataStore.getFeatureSource(pointsTypeName).getFeatures(filter).iterator()
+                            .next().getAttribute("sp"));
 
             tx.commit();
 
             // modified value after commit on another store instance
-            assertEquals("modified", dataStore.getFeatureSource(pointsTypeName)
-                    .getFeatures(filter).iterator().next().getAttribute("sp"));
+            assertEquals("modified", dataStore.getFeatureSource(pointsTypeName).getFeatures(filter)
+                    .iterator().next().getAttribute("sp"));
         } catch (Exception e) {
             tx.rollback();
             throw e;
@@ -232,11 +212,9 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
         assertEquals("modified", modified.getAttribute("sp"));
     }
 
-    private void setUseProvidedFidHint(boolean useProvidedFid,
-            Feature... features) {
+    private void setUseProvidedFidHint(boolean useProvidedFid, Feature... features) {
         for (Feature f : features) {
-            f.getUserData().put(Hints.USE_PROVIDED_FID,
-                    Boolean.valueOf(useProvidedFid));
+            f.getUserData().put(Hints.USE_PROVIDED_FID, Boolean.valueOf(useProvidedFid));
         }
     }
 
@@ -260,14 +238,12 @@ public class GeoGitFeatureStoreTest extends GeoGITRepositoryTestCase {
             assertEquals(2, points.getFeatures().size());
 
             // #of features before commit on a different store instance
-            assertEquals(3, dataStore.getFeatureSource(pointsTypeName)
-                    .getFeatures().size());
+            assertEquals(3, dataStore.getFeatureSource(pointsTypeName).getFeatures().size());
 
             tx.commit();
 
             // #of features after commit on a different store instance
-            assertEquals(2, dataStore.getFeatureSource(pointsTypeName)
-                    .getFeatures().size());
+            assertEquals(2, dataStore.getFeatureSource(pointsTypeName).getFeatures().size());
         } catch (Exception e) {
             tx.rollback();
             throw e;

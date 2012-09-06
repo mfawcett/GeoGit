@@ -7,6 +7,8 @@ package org.geogit.cli;
 
 import java.io.File;
 
+import org.geogit.api.Platform;
+
 /**
  *
  */
@@ -34,6 +36,12 @@ public class DefaultPlatform implements Platform {
 	@Override
 	public File getUserHome() {
 		return new File(System.getProperty("user.home"));
+	}
+
+	@Override
+	public void setWorkingDir(File workingDir) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

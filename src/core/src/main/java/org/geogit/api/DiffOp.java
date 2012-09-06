@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.geogit.repository.Repository;
+import org.geogit.storage.ObjectDatabase;
 
 /**
  * Perform a diff between trees pointed out by two commits
@@ -28,8 +29,7 @@ public class DiffOp extends AbstractGeoGitOp<Iterator<DiffEntry>> {
     }
 
     /**
-     * @param commitId
-     *            the oldVersion to set
+     * @param commitId the oldVersion to set
      * @return
      */
     public DiffOp setOldVersion(ObjectId commitId) {
@@ -38,8 +38,7 @@ public class DiffOp extends AbstractGeoGitOp<Iterator<DiffEntry>> {
     }
 
     /**
-     * @param commitId
-     *            the newVersion to set
+     * @param commitId the newVersion to set
      * @return
      */
     public DiffOp setNewVersion(ObjectId commitId) {
@@ -90,7 +89,8 @@ public class DiffOp extends AbstractGeoGitOp<Iterator<DiffEntry>> {
                     + newCommit.toString());
         }
 
-        DiffTreeWalk diffReader = new DiffTreeWalk(repo.getObjectDatabase(), oldCommit, newCommit);
+        ObjectDatabase readFrom = repo.getObjectDatabase();
+        DiffTreeWalk diffReader = new DiffTreeWalk(repo, readFrom, oldCommit, newCommit);
 
         if (pathFilter != null) {
             diffReader.setFilter(pathFilter);

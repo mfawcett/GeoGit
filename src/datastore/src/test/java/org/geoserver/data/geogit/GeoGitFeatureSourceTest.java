@@ -29,6 +29,7 @@ import java.util.Set;
 import org.geogit.api.GeoGIT;
 import org.geogit.api.Ref;
 import org.geogit.api.RevTree;
+import org.geogit.test.RepositoryTestCase;
 import org.geotools.data.Query;
 import org.geotools.data.geogit.GeoGitDataStore;
 import org.geotools.data.geogit.GeoGitFeatureSource;
@@ -51,10 +52,9 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.vividsolutions.jts.geom.Polygon;
 
-public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
+public class GeoGitFeatureSourceTest extends RepositoryTestCase {
 
-    private static final FilterFactory2 ff = CommonFactoryFinder
-            .getFilterFactory2(null);
+    private static final FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2(null);
 
     private GeoGitDataStore dataStore;
 
@@ -63,20 +63,20 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
     private GeoGitFeatureSource linesSource;
 
     @Override
-    protected void setUpChild() throws Exception {
+    protected void setUpInternal() throws Exception {
         dataStore = new GeoGitDataStore(repo);
         dataStore.createSchema(super.pointsType);
         dataStore.createSchema(super.linesType);
         insertAndAdd(points1, points2, points3, lines1, lines2, lines3);
-        new GeoGIT(repo).commit().setAuthor("yo").setCommitter("me")
-                .setMessage("initial import").call();
+        new GeoGIT(repo).commit().setAuthor("yo").setCommitter("me").setMessage("initial import")
+                .call();
 
         pointsSource = dataStore.getFeatureSource(pointsTypeName);
         linesSource = dataStore.getFeatureSource(linesTypeName);
     }
-    
+
     @Override
-    protected void tearDownChild() throws Exception {
+    protected void tearDownInternal() throws Exception {
         dataStore = null;
         pointsSource = null;
         linesSource = null;
@@ -113,12 +113,10 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
 
         assertTrue(pointsSource.getQueryCapabilities().isReliableFIDSupported());
 
-        assertTrue(pointsSource.getQueryCapabilities()
-                .isUseProvidedFIDSupported());
+        assertTrue(pointsSource.getQueryCapabilities().isUseProvidedFIDSupported());
 
         SortBy[] sortAttributes = { SortBy.NATURAL_ORDER };
-        assertFalse(pointsSource.getQueryCapabilities().supportsSorting(
-                sortAttributes));
+        assertFalse(pointsSource.getQueryCapabilities().supportsSorting(sortAttributes));
     }
 
     public void testGetSchema() {
@@ -146,16 +144,14 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         ReferencedEnvelope bounds;
         Filter filter;
 
-        filter = ff.id(Collections.singleton(ff
-                .featureId(GeoGITRepositoryTestCase.idP2)));
+        filter = ff.id(Collections.singleton(ff.featureId(RepositoryTestCase.idP2)));
         bounds = pointsSource.getBounds(new Query(pointsName, filter));
         assertEquals(boundsOf(points2), bounds);
 
         ReferencedEnvelope queryBounds = boundsOf(points1, points2);
 
         Polygon geometry = JTS.toGeometry(queryBounds);
-        filter = ff.intersects(
-                ff.property(pointsType.getGeometryDescriptor().getLocalName()),
+        filter = ff.intersects(ff.property(pointsType.getGeometryDescriptor().getLocalName()),
                 ff.literal(geometry));
 
         bounds = pointsSource.getBounds(new Query(pointsName, filter));
@@ -168,8 +164,7 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         geometry = JTS.toGeometry(transformedQueryBounds);
         geometry.setUserData(queryCrs);
 
-        filter = ff.intersects(
-                ff.property(pointsType.getGeometryDescriptor().getLocalName()),
+        filter = ff.intersects(ff.property(pointsType.getGeometryDescriptor().getLocalName()),
                 ff.literal(geometry));
 
         bounds = pointsSource.getBounds(new Query(pointsName, filter));
@@ -187,15 +182,13 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         ReferencedEnvelope bounds;
         Filter filter;
 
-        filter = ff.id(Collections.singleton(ff
-                .featureId(GeoGITRepositoryTestCase.idP2)));
+        filter = ff.id(Collections.singleton(ff.featureId(RepositoryTestCase.idP2)));
         assertEquals(1, pointsSource.getCount(new Query(pointsName, filter)));
 
         ReferencedEnvelope queryBounds = boundsOf(points1, points2);
 
         Polygon geometry = JTS.toGeometry(queryBounds);
-        filter = ff.intersects(
-                ff.property(pointsType.getGeometryDescriptor().getLocalName()),
+        filter = ff.intersects(ff.property(pointsType.getGeometryDescriptor().getLocalName()),
                 ff.literal(geometry));
 
         assertEquals(2, pointsSource.getCount(new Query(pointsName, filter)));
@@ -207,8 +200,7 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         geometry = JTS.toGeometry(transformedQueryBounds);
         geometry.setUserData(queryCrs);
 
-        filter = ff.intersects(
-                ff.property(pointsType.getGeometryDescriptor().getLocalName()),
+        filter = ff.intersects(ff.property(pointsType.getGeometryDescriptor().getLocalName()),
                 ff.literal(geometry));
 
         assertEquals(2, pointsSource.getCount(new Query(pointsName, filter)));
@@ -226,16 +218,14 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
 
         collection = pointsSource.getFeatures();
         assertEquals(pointsType, collection.getSchema());
-        assertEquals(boundsOf(points1, points2, points3),
-                collection.getBounds());
+        assertEquals(boundsOf(points1, points2, points3), collection.getBounds());
 
         actual = new HashSet<Collection<Property>>();
         for (Feature f : toList(collection.iterator())) {
             actual.add(f.getProperties());
         }
-        expected = new HashSet<Collection<Property>>(Arrays.asList(
-                points1.getProperties(), points2.getProperties(),
-                points3.getProperties()));
+        expected = new HashSet<Collection<Property>>(Arrays.asList(points1.getProperties(),
+                points2.getProperties(), points3.getProperties()));
 
         assertEquals(expected, actual);
 
@@ -247,9 +237,8 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         for (Feature f : toList(collection.iterator())) {
             actual.add(f.getProperties());
         }
-        expected = new HashSet<Collection<Property>>(Arrays.asList(
-                lines1.getProperties(), lines2.getProperties(),
-                lines3.getProperties()));
+        expected = new HashSet<Collection<Property>>(Arrays.asList(lines1.getProperties(),
+                lines2.getProperties(), lines3.getProperties()));
 
         assertEquals(expected, actual);
     }
@@ -262,8 +251,7 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
 
         Filter filter;
 
-        filter = ff.id(Collections.singleton(ff
-                .featureId(GeoGITRepositoryTestCase.idP2)));
+        filter = ff.id(Collections.singleton(ff.featureId(RepositoryTestCase.idP2)));
         collection = pointsSource.getFeatures(new Query(pointsName, filter));
         actual = new HashSet<Collection<Property>>();
         for (Feature f : toList(collection.iterator())) {
@@ -276,8 +264,7 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         ReferencedEnvelope queryBounds = boundsOf(points1, points2);
 
         Polygon geometry = JTS.toGeometry(queryBounds);
-        filter = ff.intersects(
-                ff.property(pointsType.getGeometryDescriptor().getLocalName()),
+        filter = ff.intersects(ff.property(pointsType.getGeometryDescriptor().getLocalName()),
                 ff.literal(geometry));
 
         collection = pointsSource.getFeatures(new Query(pointsName, filter));
@@ -285,8 +272,8 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         for (Feature f : toList(collection.iterator())) {
             actual.add(f.getProperties());
         }
-        expected = new HashSet<Collection<Property>>(Arrays.asList(
-                points1.getProperties(), points2.getProperties()));
+        expected = new HashSet<Collection<Property>>(Arrays.asList(points1.getProperties(),
+                points2.getProperties()));
 
         assertEquals(expected, actual);
 
@@ -297,8 +284,7 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         geometry = JTS.toGeometry(transformedQueryBounds);
         geometry.setUserData(queryCrs);
 
-        filter = ff.intersects(
-                ff.property(pointsType.getGeometryDescriptor().getLocalName()),
+        filter = ff.intersects(ff.property(pointsType.getGeometryDescriptor().getLocalName()),
                 ff.literal(geometry));
 
         collection = pointsSource.getFeatures(new Query(pointsName, filter));
@@ -306,8 +292,8 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         for (Feature f : toList(collection.iterator())) {
             actual.add(f.getProperties());
         }
-        expected = new HashSet<Collection<Property>>(Arrays.asList(
-                points1.getProperties(), points2.getProperties()));
+        expected = new HashSet<Collection<Property>>(Arrays.asList(points1.getProperties(),
+                points2.getProperties()));
 
         assertEquals(expected, actual);
 
@@ -317,16 +303,15 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         for (Feature f : toList(collection.iterator())) {
             actual.add(f.getProperties());
         }
-        expected = new HashSet<Collection<Property>>(Arrays.asList(
-                lines2.getProperties(), lines3.getProperties()));
+        expected = new HashSet<Collection<Property>>(Arrays.asList(lines2.getProperties(),
+                lines3.getProperties()));
 
         assertEquals(expected, actual);
 
     }
 
     public void testFeatureIdsAreVersioned() throws IOException {
-        SimpleFeatureCollection collection = pointsSource
-                .getFeatures(Query.ALL);
+        SimpleFeatureCollection collection = pointsSource.getFeatures(Query.ALL);
         SimpleFeatureIterator features = collection.features();
 
         Set<FeatureId> ids = new HashSet<FeatureId>();
@@ -350,8 +335,7 @@ public class GeoGitFeatureSourceTest extends GeoGITRepositoryTestCase {
         for (FeatureId id : ids) {
             assertFalse(id instanceof ResourceId);
             assertNotNull(id.getID());
-            assertNotNull(id + " has no featureVersion set",
-                    id.getFeatureVersion());
+            assertNotNull(id + " has no featureVersion set", id.getFeatureVersion());
             Ref ref = expected.get(id.getID());
             assertNotNull(ref);
             assertEquals(ref.getObjectId().toString(), id.getFeatureVersion());

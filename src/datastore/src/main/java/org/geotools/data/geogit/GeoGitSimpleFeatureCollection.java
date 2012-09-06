@@ -28,9 +28,9 @@ import org.geogit.api.ObjectId;
 import org.geogit.api.Ref;
 import org.geogit.api.RevTree;
 import org.geogit.api.SpatialRef;
+import org.geogit.repository.Repository;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.ObjectReader;
-import org.geogit.storage.WrappedSerialisingFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.factory.Hints;
@@ -86,13 +86,15 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
 
     private Integer maxFeatures;
 
-    public GeoGitSimpleFeatureCollection(final SimpleFeatureType type,
-            final Filter filter, final ObjectDatabase odb,
-            final RevTree typeTree) {
+    private Repository repository;
+
+    public GeoGitSimpleFeatureCollection(final SimpleFeatureType type, final Filter filter,
+            final ObjectDatabase odb, final RevTree typeTree, Repository repository) {
         this.type = type;
         this.filter = filter;
         this.odb = odb;
         this.typeTree = typeTree;
+        this.repository = repository;
         this.reprojector = new FeatureReprojector(type);
     }
 
@@ -119,8 +121,7 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
                     list.add((GeometryDescriptor) att);
                 }
             }
-            this.geometryDescriptors = list.toArray(new GeometryDescriptor[list
-                    .size()]);
+            this.geometryDescriptors = list.toArray(new GeometryDescriptor[list.size()]);
         }
 
         /**
@@ -128,18 +129,15 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
          * 
          * @throws TransformException
          */
-        public void expandToInclude(ReferencedEnvelope target,
-                final BoundingBox featureBounds) throws TransformException {
-            final CoordinateReferenceSystem crs = target
-                    .getCoordinateReferenceSystem();
-            final BoundingBox reprojected = ensureCompatibleCrs(featureBounds,
-                    crs);
+        public void expandToInclude(ReferencedEnvelope target, final BoundingBox featureBounds)
+                throws TransformException {
+            final CoordinateReferenceSystem crs = target.getCoordinateReferenceSystem();
+            final BoundingBox reprojected = ensureCompatibleCrs(featureBounds, crs);
             target.include(reprojected);
         }
 
         public BoundingBox ensureCompatibleCrs(final BoundingBox featureBounds,
-                final CoordinateReferenceSystem targetCrs)
-                throws TransformException {
+                final CoordinateReferenceSystem targetCrs) throws TransformException {
 
             final CoordinateReferenceSystem featureCrs = featureBounds
                     .getCoordinateReferenceSystem();
@@ -161,14 +159,11 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
                 name = geometryDescriptor.getLocalName();
                 Geometry geometry = (Geometry) feature.getAttribute(name);
                 if (geometry != null) {
-                    sourceCrs = (CoordinateReferenceSystem) geometry
-                            .getUserData();
-                    if (sourceCrs != null
-                            && !CRS.equalsIgnoreMetadata(sourceCrs, targetCrs)) {
-                        MathTransform mathTransform = CRS.findMathTransform(
-                                sourceCrs, targetCrs, true);
-                        geometry = JTS.transform((Geometry) geometry,
-                                mathTransform);
+                    sourceCrs = (CoordinateReferenceSystem) geometry.getUserData();
+                    if (sourceCrs != null && !CRS.equalsIgnoreMetadata(sourceCrs, targetCrs)) {
+                        MathTransform mathTransform = CRS.findMathTransform(sourceCrs, targetCrs,
+                                true);
+                        geometry = JTS.transform((Geometry) geometry, mathTransform);
                         geometry.setUserData(targetCrs);
                         feature.setAttribute(name, geometry);
                     }
@@ -210,8 +205,7 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
             return this.cachedBounds;
         }
 
-        final CoordinateReferenceSystem crs = type
-                .getCoordinateReferenceSystem();
+        final CoordinateReferenceSystem crs = type.getCoordinateReferenceSystem();
         ReferencedEnvelope bounds = new ReferencedEnvelope(crs);
 
         if (BigInteger.ZERO.equals(typeTree.size())) {
@@ -232,8 +226,8 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
                     }
                 }
             } else {
-                Iterator<SimpleFeature> features = new GeoGitFeatureIterator(
-                        refs, type, filter, odb);
+                Iterator<SimpleFeature> features = new GeoGitFeatureIterator(refs, type, filter,
+                        odb, repository);
                 while (features.hasNext()) {
                     featureBounds = features.next().getBounds();
                     reprojector.expandToInclude(bounds, featureBounds);
@@ -266,8 +260,8 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
         if (refs.isFullySupported()) {
             size = Iterators.size(refs);
         } else {
-            Iterator<SimpleFeature> features = new GeoGitFeatureIterator(refs,
-                    type, filter, odb);
+            Iterator<SimpleFeature> features = new GeoGitFeatureIterator(refs, type, filter, odb,
+                    repository);
             size = Iterators.size(features);
         }
 
@@ -281,8 +275,8 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
     @Override
     public Iterator<SimpleFeature> iterator() {
         final FeatureRefIterator refs = new FeatureRefIterator(typeTree, filter);
-        Iterator<SimpleFeature> features = new GeoGitFeatureIterator(refs,
-                type, filter, odb);
+        Iterator<SimpleFeature> features = new GeoGitFeatureIterator(refs, type, filter, odb,
+                repository);
         if (maxFeatures != null) {
             features = Iterators.limit(features, maxFeatures.intValue());
         }
@@ -335,14 +329,11 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
                     if (geom.getUserData() instanceof CoordinateReferenceSystem) {
                         crs = (CoordinateReferenceSystem) geom.getUserData();
                     } else if (type.getGeometryDescriptor() != null) {
-                        crs = type.getGeometryDescriptor()
-                                .getCoordinateReferenceSystem();
+                        crs = type.getGeometryDescriptor().getCoordinateReferenceSystem();
                     } else {
-                        throw new IllegalStateException(
-                                "Can't determine CRS of filter geometry");
+                        throw new IllegalStateException("Can't determine CRS of filter geometry");
                     }
-                    this.filter = new ReferencedEnvelope(
-                            geom.getEnvelopeInternal(), crs);
+                    this.filter = new ReferencedEnvelope(geom.getEnvelopeInternal(), crs);
                 } else {
                     throw new IllegalArgumentException(
                             "Right operand of BBOX filter can't be resolved to a BoundingBox: "
@@ -356,12 +347,11 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
             if (!(featureRef instanceof SpatialRef)) {
                 return false;
             }
-            final CoordinateReferenceSystem targetCrs = filter
-                    .getCoordinateReferenceSystem();
+            final CoordinateReferenceSystem targetCrs = filter.getCoordinateReferenceSystem();
             BoundingBox bounds;
             try {
-                bounds = reprojector.ensureCompatibleCrs(
-                        ((SpatialRef) featureRef).getBounds(), targetCrs);
+                bounds = reprojector.ensureCompatibleCrs(((SpatialRef) featureRef).getBounds(),
+                        targetCrs);
                 final boolean apply = filter.intersects(bounds);
                 return apply;
             } catch (TransformException e) {
@@ -386,10 +376,8 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
                 refs = typeTree.iterator(null);
                 return;
             }
-            if (filter instanceof BoundedSpatialOperator
-                    && filter instanceof BinarySpatialOperator) {
-                refs = typeTree.iterator(new BBOXPredicate(
-                        (BinarySpatialOperator) filter));
+            if (filter instanceof BoundedSpatialOperator && filter instanceof BinarySpatialOperator) {
+                refs = typeTree.iterator(new BBOXPredicate((BinarySpatialOperator) filter));
                 return;
             }
 
@@ -421,16 +409,15 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
 
         private final ObjectDatabase odb;
 
-        final WrappedSerialisingFactory serialisingFactory;
+        private Repository repository;
 
-        public GeoGitFeatureIterator(final Iterator<Ref> featureRefs,
-                final SimpleFeatureType type, final Filter filter,
-                final ObjectDatabase odb) {
+        public GeoGitFeatureIterator(final Iterator<Ref> featureRefs, final SimpleFeatureType type,
+                final Filter filter, final ObjectDatabase odb, final Repository repository) {
             this.featureRefs = featureRefs;
             this.type = type;
             this.filter = filter;
             this.odb = odb;
-            this.serialisingFactory = WrappedSerialisingFactory.getInstance();
+            this.repository = repository;
         }
 
         @Override
@@ -446,8 +433,8 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
                     ObjectId contentId = featureRef.getObjectId();
 
                     SimpleFeature feature;
-                    ObjectReader<Feature> featureReader = serialisingFactory
-                            .createFeatureReader(type, featureId, hints);
+                    ObjectReader<Feature> featureReader = repository.newFeatureReader(type,
+                            featureId, hints);
 
                     feature = (SimpleFeature) odb.get(contentId, featureReader);
                     feature = reprojector.reproject(feature);
@@ -464,8 +451,7 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
     }
 
     @Override
-    public void accepts(FeatureVisitor visitor, ProgressListener progress)
-            throws IOException {
+    public void accepts(FeatureVisitor visitor, ProgressListener progress) throws IOException {
         // TODO Auto-generated method stub
 
     }
@@ -486,8 +472,7 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
      * @see org.geotools.feature.FeatureCollection#addListener(org.geotools.feature.CollectionListener)
      */
     @Override
-    public void addListener(CollectionListener listener)
-            throws NullPointerException {
+    public void addListener(CollectionListener listener) throws NullPointerException {
         // TODO Auto-generated method stub
 
     }
@@ -496,8 +481,7 @@ public class GeoGitSimpleFeatureCollection implements SimpleFeatureCollection {
      * @see org.geotools.feature.FeatureCollection#removeListener(org.geotools.feature.CollectionListener)
      */
     @Override
-    public void removeListener(CollectionListener listener)
-            throws NullPointerException {
+    public void removeListener(CollectionListener listener) throws NullPointerException {
         // TODO Auto-generated method stub
 
     }

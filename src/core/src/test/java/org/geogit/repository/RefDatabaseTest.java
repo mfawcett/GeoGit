@@ -16,6 +16,7 @@ import org.geogit.test.RepositoryTestCase;
 public class RefDatabaseTest extends RepositoryTestCase {
 
     private RefDatabase refDb;
+
     private GeoGIT ggit;
 
     @Override
@@ -29,18 +30,6 @@ public class RefDatabaseTest extends RepositoryTestCase {
         assertEquals(ObjectId.NULL, refDb.getRef(Ref.HEAD).getObjectId());
     }
 
-    public void testNewRef(){        
-        ggit.remoteAddOp().setName("john").setFetch("john").setUrl("http://localhost:8080/projects/mygeogit").call();
-        assertEquals(1, refDb.getRefs(Ref.REMOTES_PREFIX+"john").size());
-        assertEquals(ObjectId.NULL, refDb.getRef(Ref.REMOTES_PREFIX+"john"+"/"+Ref.MASTER).getObjectId());
-        assertEquals(1, refDb.getRefs(Ref.REMOTES_PREFIX).size());
-    }
-
-    public void testGetRef(){
-        ggit.remoteAddOp().setName("john").setFetch("john").setUrl("http://localhost:8080/projects/mygeogit").call();
-        assertEquals(ObjectId.NULL, ggit.getRepository().getRef(Ref.REMOTES_PREFIX+"john"+"/"+Ref.MASTER).getObjectId());
-    }
-
     public void testPutGetRef() {
         byte[] raw = new byte[20];
         Arrays.fill(raw, (byte) 1);
@@ -50,7 +39,6 @@ public class RefDatabaseTest extends RepositoryTestCase {
         assertFalse(refDb.put(ref));
 
         Ref read = refDb.getRef("refs/HEAD");
-        assertNotSame(ref, read);
         assertEquals(ref, read);
     }
 

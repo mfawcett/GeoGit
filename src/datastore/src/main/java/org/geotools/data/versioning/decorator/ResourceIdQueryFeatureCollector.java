@@ -16,7 +16,6 @@
  */
 package org.geotools.data.versioning.decorator;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -26,7 +25,6 @@ import org.geogit.api.Ref;
 import org.geogit.repository.Repository;
 import org.geogit.storage.ObjectReader;
 import org.geogit.storage.StagingDatabase;
-import org.geogit.storage.WrappedSerialisingFactory;
 import org.geotools.data.Query;
 import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
@@ -46,8 +44,7 @@ public class ResourceIdQueryFeatureCollector implements Iterable<Feature> {
     private Query query;
 
     public ResourceIdQueryFeatureCollector(final Repository repository,
-            final FeatureType featureType, final Set<ResourceId> resourceIds,
-            Query query) {
+            final FeatureType featureType, final Set<ResourceId> resourceIds, Query query) {
         this.repository = repository;
         this.featureType = featureType;
         this.resourceIds = resourceIds;
@@ -60,8 +57,7 @@ public class ResourceIdQueryFeatureCollector implements Iterable<Feature> {
         Iterator<Ref> featureRefs = Iterators.emptyIterator();
 
         GeoGIT ggit = new GeoGIT(repository);
-        VersionQuery versionQuery = new VersionQuery(ggit,
-                featureType.getName());
+        VersionQuery versionQuery = new VersionQuery(ggit, featureType.getName());
         try {
             for (ResourceId rid : resourceIds) {
                 Iterator<Ref> ridIterator;
@@ -74,24 +70,21 @@ public class ResourceIdQueryFeatureCollector implements Iterable<Feature> {
 
         featureRefs = versionQuery.filterByQueryVersion(featureRefs, query);
 
-        Iterator<Feature> features = Iterators.transform(featureRefs,
-                new RefToFeature(repository, featureType));
+        Iterator<Feature> features = Iterators.transform(featureRefs, new RefToFeature(repository,
+                featureType));
 
         return features;
     }
 
-    private static class RefToFeature implements Function<Ref, Feature> {
+    private final class RefToFeature implements Function<Ref, Feature> {
 
         private final Repository repo;
 
         private final FeatureType type;
 
-        private WrappedSerialisingFactory serialisingFactory;
-
         public RefToFeature(final Repository repo, final FeatureType type) {
             this.repo = repo;
             this.type = type;
-            serialisingFactory = WrappedSerialisingFactory.getInstance();
         }
 
         @Override
@@ -100,15 +93,11 @@ public class ResourceIdQueryFeatureCollector implements Iterable<Feature> {
             ObjectId contentId = featureRef.getObjectId();
             StagingDatabase database = repo.getIndex().getDatabase();
             Feature feature;
-            try {
-                ObjectReader<Feature> featureReader = serialisingFactory
-                        .createFeatureReader(type, featureId);
-                feature = database.get(contentId, featureReader);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return VersionedFeatureWrapper.wrap(feature, featureRef
-                    .getObjectId().toString());
+
+            ObjectReader<Feature> featureReader = repository.newFeatureReader(type, featureId);
+            feature = database.get(contentId, featureReader);
+
+            return VersionedFeatureWrapper.wrap(feature, featureRef.getObjectId().toString());
         }
 
     }
