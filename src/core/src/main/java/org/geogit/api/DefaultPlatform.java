@@ -44,4 +44,10 @@ public class DefaultPlatform implements Platform {
         return System.currentTimeMillis();
     }
 
+	@Override
+	public File getUserHome() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
