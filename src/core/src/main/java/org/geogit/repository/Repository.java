@@ -19,6 +19,7 @@ import org.geogit.api.RevTag;
 import org.geogit.api.RevTree;
 import org.geogit.storage.BlobPrinter;
 import org.geogit.storage.BlobReader;
+import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.ObjectInserter;
 import org.geogit.storage.ObjectReader;
@@ -65,6 +66,9 @@ public class Repository {
     private File repositoryHome;
 
     @Inject
+    private ConfigDatabase configDatabase;
+    
+    @Inject
     private RefDatabase refDatabase;
 
     @Inject
@@ -79,6 +83,10 @@ public class Repository {
         index.getDatabase().create();
     }
 
+    public ConfigDatabase getConfigDatabase() {
+        return configDatabase;
+    }
+    
     public RefDatabase getRefDatabase() {
         return refDatabase;
     }

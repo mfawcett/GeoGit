@@ -19,6 +19,8 @@ package org.geogit.api;
 import org.geogit.repository.Index;
 import org.geogit.repository.Repository;
 import org.geogit.repository.StagingArea;
+import org.geogit.storage.ConfigDatabase;
+import org.geogit.storage.IniConfigDatabase;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.ObjectSerialisingFactory;
 import org.geogit.storage.RefDatabase;
@@ -48,6 +50,8 @@ public class GeogitModule extends AbstractModule {
         bind(Repository.class).in(Scopes.SINGLETON);
         bind(StagingArea.class).to(Index.class).in(Scopes.SINGLETON);
 
+        bind(ConfigDatabase.class).to(IniConfigDatabase.class);
+        
         // JE bindings
         bind(ObjectDatabase.class).to(JEObjectDatabase.class).in(Scopes.SINGLETON);
         bind(StagingDatabase.class).to(JEStagingDatabase.class).in(Scopes.SINGLETON);

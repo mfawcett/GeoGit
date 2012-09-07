@@ -30,6 +30,7 @@ public class PorcelainCommnds extends AbstractModule {
     @Override
     protected void configure() {
         bind(InitOp.class);
+        bind(ConfigOp.class);
     }
 
 }
