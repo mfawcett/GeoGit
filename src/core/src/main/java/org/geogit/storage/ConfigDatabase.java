@@ -1,11 +1,21 @@
 package org.geogit.storage;
 
+
 public interface ConfigDatabase {
 
-	public String get(String key);
-	public String getGlobal(String key);
+	@SuppressWarnings("serial")
+	public class ConfigException extends Exception {
+		public int statusCode;
+		
+		public ConfigException(int statusCode) {
+			this.statusCode = statusCode;
+		}
+	}
+	
+	public String get(String key) throws ConfigException;
+	public String getGlobal(String key) throws ConfigException;
 
-	public void put(String key, Object value);
-	public void putGlobal(String key, Object value);
+	public void put(String key, Object value) throws ConfigException;
+	public void putGlobal(String key, Object value) throws ConfigException;
 	
 }
