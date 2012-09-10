@@ -16,12 +16,14 @@
  */
 package org.geogit.api;
 
+import org.geogit.command.porcelain.InitOp;
+
 import com.google.inject.AbstractModule;
 
 /**
  *
  */
-public class PorcelainCommnds extends AbstractModule {
+public class PorcelainCommands extends AbstractModule {
 
     /**
      * 
