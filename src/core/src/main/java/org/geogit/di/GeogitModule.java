@@ -10,7 +10,9 @@ import org.geogit.api.Platform;
 import org.geogit.repository.Index;
 import org.geogit.repository.Repository;
 import org.geogit.repository.StagingArea;
+import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.FileRefDatabase;
+import org.geogit.storage.IniConfigDatabase;
 import org.geogit.storage.ObjectSerialisingFactory;
 import org.geogit.storage.RefDatabase;
 import org.geogit.storage.hessian.HessianFactory;
@@ -32,6 +34,7 @@ public class GeogitModule extends AbstractModule {
         bind(CommandLocator.class).to(GuiceCommandLocator.class).in(Scopes.SINGLETON);
         bind(Platform.class).to(DefaultPlatform.class).asEagerSingleton();
         bind(Repository.class).in(Scopes.SINGLETON);
+        bind(ConfigDatabase.class).to(IniConfigDatabase.class).in(Scopes.SINGLETON);
         bind(StagingArea.class).to(Index.class).in(Scopes.SINGLETON);
         bind(RefDatabase.class).to(FileRefDatabase.class).in(Scopes.SINGLETON);
         bind(ObjectSerialisingFactory.class).to(HessianFactory.class).in(Scopes.SINGLETON);
