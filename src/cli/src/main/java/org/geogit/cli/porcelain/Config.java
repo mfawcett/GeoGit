@@ -39,11 +39,11 @@ public class Config extends AbstractCommand implements CLICommand {
 
         final GeoGIT geogit = new GeoGIT(cli.getPlatform().pwd());
         try {
-            final List<String> status = geogit.command(ConfigOp.class).setGet(get)
+            final String value = geogit.command(ConfigOp.class).setGet(get)
                     .setGlobal(global).setNameValuePair(nameValuePair).call();
 
-            if (status.size() == 2) {
-                System.out.println(status.get(0) + " = " + status.get(1));
+            if (value != null) {
+                cli.getConsole().println(value);
             }
         } catch (ConfigException e) {
             // These mirror 'git config' status codes. Some of these are unused,
