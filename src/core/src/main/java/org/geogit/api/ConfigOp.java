@@ -1,6 +1,5 @@
 package org.geogit.api;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.geogit.repository.Repository;
@@ -11,7 +10,7 @@ import org.geogit.storage.ConfigDatabase.StatusCode;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 
-public class ConfigOp extends AbstractGeoGitOp<List<String>> {
+public class ConfigOp extends AbstractGeoGitOp<String> {
 
     private boolean global;
 
@@ -28,7 +27,7 @@ public class ConfigOp extends AbstractGeoGitOp<List<String>> {
     }
 
     @Override
-    public List<String> call() throws ConfigException {
+    public String call() throws ConfigException {
         final ConfigDatabase config = injector.getInstance(Repository.class).getConfigDatabase();
 
         if (get) {
@@ -48,10 +47,7 @@ public class ConfigOp extends AbstractGeoGitOp<List<String>> {
                 throw new ConfigException(StatusCode.SECTION_OR_KEY_INVALID);
             }
 
-            List<String> pair = new ArrayList<String>();
-            pair.add(name);
-            pair.add(value);
-            return pair;
+            return value;
         } else {
             if (global) {
                 config.putGlobal(nameValuePair.get(0), nameValuePair.get(1));
