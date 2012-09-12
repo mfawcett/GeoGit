@@ -2,13 +2,11 @@ package org.geogit.api;
 
 import java.util.List;
 
-import org.geogit.repository.Repository;
 import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.ConfigDatabase.ConfigException;
 import org.geogit.storage.ConfigDatabase.StatusCode;
 
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 
 public class ConfigOp extends AbstractGeoGitOp<String> {
 
@@ -18,23 +16,22 @@ public class ConfigOp extends AbstractGeoGitOp<String> {
 
     private List<String> nameValuePair;
 
-    private Injector injector;
+    final private ConfigDatabase config;
 
     @Inject
-    public ConfigOp(Injector injector) {
+    public ConfigOp(ConfigDatabase config) {
         super(null);
-        this.injector = injector;
+        this.config = config;
     }
 
     @Override
     public String call() throws ConfigException {
-        final ConfigDatabase config = injector.getInstance(Repository.class).getConfigDatabase();
+        if (nameValuePair == null) {
+            throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
+        }
 
-        if (get) {
-            if (nameValuePair == null) {
-                throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
-            }
-
+        // Alternate syntax is to omit '--get' and only provide section.key, no value
+        if (get || nameValuePair.size() == 1) {
             String name = nameValuePair.get(0);
             String value;
             if (global) {
@@ -49,6 +46,10 @@ public class ConfigOp extends AbstractGeoGitOp<String> {
 
             return value;
         } else {
+            if (nameValuePair.size() != 2) {
+                throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
+            }
+
             if (global) {
                 config.putGlobal(nameValuePair.get(0), nameValuePair.get(1));
             } else {

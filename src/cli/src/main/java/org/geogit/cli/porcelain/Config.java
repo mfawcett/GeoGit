@@ -39,8 +39,8 @@ public class Config extends AbstractCommand implements CLICommand {
 
         final GeoGIT geogit = new GeoGIT(cli.getPlatform().pwd());
         try {
-            final String value = geogit.command(ConfigOp.class).setGet(get)
-                    .setGlobal(global).setNameValuePair(nameValuePair).call();
+            final String value = geogit.command(ConfigOp.class).setGet(get).setGlobal(global)
+                    .setNameValuePair(nameValuePair).call();
 
             if (value != null) {
                 cli.getConsole().println(value);

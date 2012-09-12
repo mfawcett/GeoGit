@@ -32,9 +32,25 @@ Feature: "config" command
      When I run the command "config --get doesnt.exist"
      Then it should answer "The section or key is invalid"
 
-  Scenario: Try to get a config value without specifying one
+  Scenario: Try to get a config value without specifying key
     Given I have a repository
      When I run the command "config --global --get"
      Then it should answer "No section or name was provided"
      When I run the command "config --get"
      Then it should answer "No section or name was provided"
+
+  Scenario: Try to get a config value using malformed key
+    Given I have a repository
+     When I run the command "config --global --get test"
+     Then it should answer "The section or key is invalid"
+     When I run the command "config --get test"
+     Then it should answer "The section or key is invalid"
+
+  Scenario: Try to get a config value using the alternate syntax 
+    Given I have a repository
+     When I run the command "config --global section.key value1"
+      And I run the command "config --global section.key"
+     Then it should answer "value1"
+     When I run the command "config section.key value2"
+      And I run the command "config section.key"
+     Then it should answer "value2"

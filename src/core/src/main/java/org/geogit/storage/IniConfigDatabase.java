@@ -13,8 +13,12 @@ import com.google.inject.Inject;
 
 public class IniConfigDatabase implements ConfigDatabase {
 
+    final private Platform platform;
+
     @Inject
-    private Platform platform;
+    public IniConfigDatabase(Platform platform) {
+        this.platform = platform;
+    }
 
     private class SectionOptionPair {
         String section;
@@ -23,16 +27,16 @@ public class IniConfigDatabase implements ConfigDatabase {
 
         public SectionOptionPair(String key) throws ConfigException {
             final int index = key.indexOf('.');
-            
+
             if (index == -1) {
-                throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
+                throw new ConfigException(StatusCode.SECTION_OR_KEY_INVALID);
             }
-            
+
             section = key.substring(0, index);
             option = key.substring(index + 1);
-            
+
             if (section.length() == 0 || option.length() == 0) {
-                throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
+                throw new ConfigException(StatusCode.SECTION_OR_KEY_INVALID);
             }
         }
     }
@@ -80,7 +84,7 @@ public class IniConfigDatabase implements ConfigDatabase {
         if (key == null) {
             throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
         }
-        
+
         final SectionOptionPair pair = new SectionOptionPair(key);
         try {
             final Wini ini = new Wini(file);
