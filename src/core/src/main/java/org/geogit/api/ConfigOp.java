@@ -31,7 +31,7 @@ public class ConfigOp extends AbstractGeoGitOp<String> {
         final ConfigDatabase config = injector.getInstance(Repository.class).getConfigDatabase();
 
         if (get) {
-            if (nameValuePair.size() == 0) {
+            if (nameValuePair == null) {
                 throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
             }
 

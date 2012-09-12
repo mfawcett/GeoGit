@@ -21,10 +21,19 @@ public class IniConfigDatabase implements ConfigDatabase {
 
         String option;
 
-        public SectionOptionPair(String key) {
+        public SectionOptionPair(String key) throws ConfigException {
             final int index = key.indexOf('.');
+            
+            if (index == -1) {
+                throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
+            }
+            
             section = key.substring(0, index);
             option = key.substring(index + 1);
+            
+            if (section.length() == 0 || option.length() == 0) {
+                throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
+            }
         }
     }
 
@@ -68,8 +77,12 @@ public class IniConfigDatabase implements ConfigDatabase {
     }
 
     private <T> T get(String key, File file, Class<T> c) throws ConfigException {
+        if (key == null) {
+            throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
+        }
+        
+        final SectionOptionPair pair = new SectionOptionPair(key);
         try {
-            final SectionOptionPair pair = new SectionOptionPair(key);
             final Wini ini = new Wini(file);
             return ini.get(pair.section, pair.option, c);
         } catch (Exception e) {
@@ -78,8 +91,8 @@ public class IniConfigDatabase implements ConfigDatabase {
     }
 
     private void put(String key, Object value, File file) throws ConfigException {
+        final SectionOptionPair pair = new SectionOptionPair(key);
         try {
-            final SectionOptionPair pair = new SectionOptionPair(key);
             final Wini ini = new Wini(file);
             ini.put(pair.section, pair.option, value);
             ini.store();
