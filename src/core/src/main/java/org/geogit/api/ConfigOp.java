@@ -2,13 +2,11 @@ package org.geogit.api;
 
 import java.util.List;
 
-import org.geogit.repository.Repository;
 import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.ConfigDatabase.ConfigException;
 import org.geogit.storage.ConfigDatabase.StatusCode;
 
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 
 public class ConfigOp extends AbstractGeoGitOp<String> {
 
@@ -18,17 +16,15 @@ public class ConfigOp extends AbstractGeoGitOp<String> {
 
     private List<String> nameValuePair;
 
-    private Injector injector;
+    final ConfigDatabase config;
 
     @Inject
-    public ConfigOp(Injector injector) {
-        super(null);
-        this.injector = injector;
+    public ConfigOp(ConfigDatabase config) {
+        this.config = config;
     }
 
     @Override
     public String call() throws ConfigException {
-        final ConfigDatabase config = injector.getInstance(Repository.class).getConfigDatabase();
 
         if (get) {
             if (nameValuePair.size() == 0) {

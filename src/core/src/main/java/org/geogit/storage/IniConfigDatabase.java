@@ -6,15 +6,19 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.geogit.api.Platform;
-import org.geogit.command.plumbing.ResolveGeogitDir;
+import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.ini4j.Wini;
 
 import com.google.inject.Inject;
 
 public class IniConfigDatabase implements ConfigDatabase {
 
-    @Inject
     private Platform platform;
+
+    @Inject
+    public IniConfigDatabase(Platform platform) {
+        this.platform = platform;
+    }
 
     private class SectionOptionPair {
         String section;
@@ -37,9 +41,9 @@ public class IniConfigDatabase implements ConfigDatabase {
 
         File f;
         try {
-            f = new File(url.toURI() + "/.geogitconfig");
+            f = new File(url.toURI() + "/config");
         } catch (URISyntaxException e) {
-            f = new File(url.getPath() + "/.geogitconfig");
+            f = new File(url.getPath() + "/config");
         }
 
         try {
