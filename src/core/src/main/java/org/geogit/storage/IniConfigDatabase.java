@@ -37,9 +37,9 @@ public class IniConfigDatabase implements ConfigDatabase {
 
         File f;
         try {
-            f = new File(url.toURI() + "/.geogitconfig");
+            f = new File(new File(url.toURI()), "config");
         } catch (URISyntaxException e) {
-            f = new File(url.getPath() + "/.geogitconfig");
+            f = new File(url.getPath(), "config");
         }
 
         try {
@@ -58,7 +58,7 @@ public class IniConfigDatabase implements ConfigDatabase {
             throw new ConfigException(StatusCode.USERHOME_NOT_SET);
         }
 
-        File f = new File(home.getPath() + "/.geogitconfig");
+        File f = new File(home.getPath(), ".geogitconfig");
         try {
             f.createNewFile();
         } catch (IOException e) {
