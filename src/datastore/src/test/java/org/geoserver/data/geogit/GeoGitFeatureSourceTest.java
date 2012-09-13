@@ -34,7 +34,7 @@ import java.util.Set;
 
 import org.geogit.api.NodeRef;
 import org.geogit.api.RevTree;
-import org.geogit.test.RepositoryTestCase;
+import org.geogit.test.integration.RepositoryTestCase;
 import org.geotools.data.Query;
 import org.geotools.data.geogit.GeoGitDataStore;
 import org.geotools.data.geogit.GeoGitFeatureSource;
@@ -337,7 +337,7 @@ public class GeoGitFeatureSourceTest extends RepositoryTestCase {
             ids.add(identifier);
         }
 
-        NodeRef typeTreeRef = repo.getRootTreeChild(pointsNs, pointsName);
+        NodeRef typeTreeRef = repo.getRootTreeChild(pointsName);
         RevTree tree = repo.getTree(typeTreeRef.getObjectId());
 
         List<NodeRef> refs = toList(tree.iterator(null));

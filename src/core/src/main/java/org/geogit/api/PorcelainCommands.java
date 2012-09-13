@@ -16,7 +16,7 @@
  */
 package org.geogit.api;
 
-import org.geogit.command.porcelain.InitOp;
+import org.geogit.api.porcelain.InitOp;
 
 import com.google.inject.AbstractModule;
 

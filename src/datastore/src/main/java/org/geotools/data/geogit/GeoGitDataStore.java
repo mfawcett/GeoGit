@@ -18,7 +18,6 @@ package org.geotools.data.geogit;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
@@ -30,10 +29,11 @@ import org.geogit.api.ObjectId;
 import org.geogit.api.Ref;
 import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevTree;
+import org.geogit.api.plumbing.RefParse;
+import org.geogit.api.plumbing.UpdateRef;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.ObjectReader;
 import org.geogit.storage.ObjectWriter;
-import org.geogit.storage.RefDatabase;
 import org.geotools.data.DefaultServiceInfo;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.FeatureWriter;
@@ -43,8 +43,6 @@ import org.geotools.data.SchemaNotFoundException;
 import org.geotools.data.ServiceInfo;
 import org.geotools.data.Transaction;
 import org.geotools.data.versioning.VersioningDataStore;
-import org.geotools.feature.NameImpl;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.util.logging.Logging;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -58,7 +56,7 @@ public class GeoGitDataStore implements VersioningDataStore {
 
     private static final Logger LOGGER = Logging.getLogger(GeoGitDataStore.class);
 
-    public static final String TYPE_NAMES_REF_TREE = "typeNames";
+    public static final String TYPE_NAMES_REF_TREE = "TYPE_NAMES";
 
     private static final String NULL_NAMESPACE = "";
 
@@ -78,10 +76,9 @@ public class GeoGitDataStore implements VersioningDataStore {
     }
 
     private void init() throws IOException {
-        final RefDatabase refDatabase = geogit.getRepository().getRefDatabase();
         final ObjectDatabase objectDatabase = geogit.getRepository().getObjectDatabase();
 
-        Ref typesTreeRef = refDatabase.getRef(TYPE_NAMES_REF_TREE);
+        Ref typesTreeRef = geogit.command(RefParse.class).setName(TYPE_NAMES_REF_TREE).call();
         if (null == typesTreeRef) {
             LOGGER.info("Initializing type name references. Types tree does not exist");
             final RevTree typesTree = objectDatabase.newTree();
@@ -93,8 +90,8 @@ public class GeoGitDataStore implements VersioningDataStore {
             } catch (Exception e) {
                 throw new IOException(e);
             }
-            typesTreeRef = new Ref(TYPE_NAMES_REF_TREE, typesTreeId, TYPE.TREE);
-            refDatabase.put(typesTreeRef);
+            typesTreeRef = geogit.command(UpdateRef.class).setName(TYPE_NAMES_REF_TREE)
+                    .setNewValue(typesTreeId).call();
             LOGGER.info("Type names tree reference initialized");
         } else {
             LOGGER.info("Loading type name references");
@@ -129,26 +126,21 @@ public class GeoGitDataStore implements VersioningDataStore {
     }
 
     private List<Name> getNamesInternal() throws IOException {
-        final RefDatabase refDatabase = geogit.getRepository().getRefDatabase();
 
-        final Ref typesTreeRef = refDatabase.getRef(TYPE_NAMES_REF_TREE);
+        final Ref typesTreeRef = geogit.command(RefParse.class).setName(TYPE_NAMES_REF_TREE).call();
         Preconditions.checkState(typesTreeRef != null);
 
-        RevTree namespacesTree = geogit.getRepository().getTree(typesTreeRef.getObjectId());
-        Preconditions.checkState(null != namespacesTree, "Referenced types tree does not exist: "
-                + typesTreeRef);
+        RevTree typesTree = geogit.getRepository().getTree(typesTreeRef.getObjectId());
 
         List<Name> names = new ArrayList<Name>();
-        for (Iterator<NodeRef> namespaces = namespacesTree.iterator(null); namespaces.hasNext();) {
-            final NodeRef namespaceRef = namespaces.next();
-            Preconditions.checkState(TYPE.TREE.equals(namespaceRef.getType()));
-            final String nsUri = namespaceRef.getName();
-            final RevTree typesTree = geogit.getRepository().getTree(namespaceRef.getObjectId());
-            for (Iterator<NodeRef> simpleNames = typesTree.iterator(null); simpleNames.hasNext();) {
-                final NodeRef typeNameRef = simpleNames.next();
-                final String simpleTypeName = typeNameRef.getName();
-                names.add(new NameImpl(nsUri, simpleTypeName));
-            }
+        for (Iterator<NodeRef> simpleNames = typesTree.iterator(null); simpleNames.hasNext();) {
+            final NodeRef typeNameRef = simpleNames.next();
+            SimpleFeatureType featureType = geogit
+                    .getRepository()
+                    .getObjectDatabase()
+                    .get(typeNameRef.getObjectId(),
+                            geogit.getRepository().newSimpleFeatureTypeReader());
+            names.add(featureType.getName());
         }
 
         return names;
@@ -191,38 +183,34 @@ public class GeoGitDataStore implements VersioningDataStore {
             throw new IOException(createType.getName() + " already exists");
         }
 
-        {
-            // GeoServer calls createSchema with this namespace but then asks
-            // for the one passed in
-            // as the DataStore's namespace parameter
-            final String ignoreNamespace = "http://www.opengis.net/gml";
-            Name name = createType.getName();
-            if ((ignoreNamespace.equals(name.getNamespaceURI()) || null == name.getNamespaceURI())
-                    && null != defaultNamespace) {
-                LOGGER.info("FeatureType to be created has no namespace, assigning DataStore's default: '"
-                        + defaultNamespace + "'");
-
-                SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
-                builder.setName(createType.getName().getLocalPart());
-                builder.setNamespaceURI(defaultNamespace);
-                builder.addAll(createType.getAttributeDescriptors());
-                createType = builder.buildFeatureType();
-            }
-
-        }
+        // {
+        // // GeoServer calls createSchema with this namespace but then asks
+        // // for the one passed in
+        // // as the DataStore's namespace parameter
+        // final String ignoreNamespace = "http://www.opengis.net/gml";
+        // Name name = createType.getName();
+        // if ((ignoreNamespace.equals(name.getNamespaceURI()) || null == name.getNamespaceURI())
+        // && null != defaultNamespace) {
+        // LOGGER.info("FeatureType to be created has no namespace, assigning DataStore's default: '"
+        // + defaultNamespace + "'");
+        //
+        // SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+        // builder.setName(createType.getName().getLocalPart());
+        // builder.setNamespaceURI(defaultNamespace);
+        // builder.addAll(createType.getAttributeDescriptors());
+        // createType = builder.buildFeatureType();
+        // }
+        //
+        // }
         final Name typeName = createType.getName();
-        final RefDatabase refDatabase = geogit.getRepository().getRefDatabase();
 
-        final Ref typesTreeRef = refDatabase.getRef(TYPE_NAMES_REF_TREE);
+        final Ref typesTreeRef = geogit.command(RefParse.class).setName(TYPE_NAMES_REF_TREE).call();
         Preconditions.checkState(typesTreeRef != null);
 
-        final RevTree namespacesRootTree = geogit.getRepository().getTree(
-                typesTreeRef.getObjectId());
-        Preconditions.checkState(namespacesRootTree != null);
-
-        final String namespace = null == typeName.getNamespaceURI() ? NULL_NAMESPACE : typeName
-                .getNamespaceURI();
         final String localName = typeName.getLocalPart();
+
+        MutableTree typesTree = geogit.getRepository().getTree(typesTreeRef.getObjectId())
+                .mutable();
 
         try {
             final ObjectId featureTypeBlobId;
@@ -230,22 +218,18 @@ public class GeoGitDataStore implements VersioningDataStore {
             featureTypeBlobId = objectDatabase.put(geogit.getRepository()
                     .newSimpleFeatureTypeWriter(createType));
 
-            final List<String> namespaceTreePath = Collections.singletonList(namespace);
-            MutableTree namespaceTree = objectDatabase.getOrCreateSubTree(namespacesRootTree,
-                    namespaceTreePath);
+            typesTree.put(new NodeRef(localName, featureTypeBlobId, TYPE.BLOB));
 
-            namespaceTree.put(new NodeRef(localName, featureTypeBlobId, TYPE.BLOB));
-
-            final MutableTree root = namespacesRootTree.mutable();
             final ObjectId newTypeRefsTreeId;
-            newTypeRefsTreeId = objectDatabase.writeBack(root, namespaceTree, namespaceTreePath);
+            newTypeRefsTreeId = objectDatabase.put(geogit.getRepository().newRevTreeWriter(
+                    typesTree));
+            // newTypeRefsTreeId = objectDatabase.writeBack(typesTree, namespaceTree,
+            // namespaceTreePath);
 
-            final Ref newTypesTreeRef = new Ref(TYPE_NAMES_REF_TREE, newTypeRefsTreeId, TYPE.TREE);
-            refDatabase.put(newTypesTreeRef);
-
-        } catch (IOException e) {
-            throw e;
+            geogit.command(UpdateRef.class).setName(TYPE_NAMES_REF_TREE)
+                    .setNewValue(newTypeRefsTreeId).call();
         } catch (Exception e) {
+            Throwables.propagateIfInstanceOf(e, IOException.class);
             Throwables.propagate(e);
         }
     }
@@ -257,19 +241,16 @@ public class GeoGitDataStore implements VersioningDataStore {
     public SimpleFeatureType getSchema(final Name name) throws IOException {
         Preconditions.checkNotNull(name);
 
-        final RefDatabase refDatabase = geogit.getRepository().getRefDatabase();
         final ObjectDatabase objectDatabase = geogit.getRepository().getObjectDatabase();
 
-        final Ref typesTreeRef = refDatabase.getRef(TYPE_NAMES_REF_TREE);
+        final Ref typesTreeRef = geogit.command(RefParse.class).setName(TYPE_NAMES_REF_TREE).call();
         Preconditions.checkState(typesTreeRef != null);
 
         final RevTree namespacesRootTree = geogit.getRepository().getTree(
                 typesTreeRef.getObjectId());
         Preconditions.checkState(namespacesRootTree != null);
 
-        final String[] path = {
-                name.getNamespaceURI() == null ? NULL_NAMESPACE : name.getNamespaceURI(),
-                name.getLocalPart() };
+        final String[] path = { name.getLocalPart() };
 
         final NodeRef typeRef = objectDatabase.getTreeChild(namespacesRootTree, path);
         if (typeRef == null) {
@@ -278,7 +259,7 @@ public class GeoGitDataStore implements VersioningDataStore {
         Preconditions.checkState(TYPE.BLOB.equals(typeRef.getType()));
         final ObjectId objectId = typeRef.getObjectId();
         final ObjectReader<SimpleFeatureType> reader = getGeogit().getRepository()
-                .newSimpleFeatureTypeReader(name);
+                .newSimpleFeatureTypeReader();
         final SimpleFeatureType featureType = objectDatabase.get(objectId, reader);
         return featureType;
     }

@@ -20,7 +20,6 @@ public class ConfigOp extends AbstractGeoGitOp<String> {
 
     @Inject
     public ConfigOp(ConfigDatabase config) {
-        super(null);
         this.config = config;
     }
 

@@ -37,7 +37,12 @@ public class Config extends AbstractCommand implements CLICommand {
     @Override
     public void runInternal(GeogitCLI cli) throws Exception {
 
-        final GeoGIT geogit = new GeoGIT(cli.getPlatform().pwd());
+        GeoGIT geogit = cli.getGeogit();
+        if (null == geogit) {
+            // we're not in a repository, need a geogit anyways to run the global commands
+            geogit = cli.newGeoGIT();
+        }
+
         try {
             final String value = geogit.command(ConfigOp.class).setGet(get).setGlobal(global)
                     .setNameValuePair(nameValuePair).call();

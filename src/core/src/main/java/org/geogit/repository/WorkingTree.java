@@ -6,7 +6,6 @@ package org.geogit.repository;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -21,15 +20,17 @@ import org.geogit.api.DiffEntry;
 import org.geogit.api.MutableTree;
 import org.geogit.api.NodeRef;
 import org.geogit.api.ObjectId;
+import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevTree;
 import org.geogit.api.TreeVisitor;
+import org.geogit.storage.ObjectReader;
 import org.geogit.storage.ObjectWriter;
 import org.geogit.storage.StagingDatabase;
 import org.geotools.factory.Hints;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
-import org.geotools.feature.NameImpl;
 import org.opengis.feature.Feature;
+import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
@@ -38,7 +39,9 @@ import org.opengis.util.ProgressListener;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 /**
@@ -76,19 +79,16 @@ public class WorkingTree {
     public void init(final FeatureType featureType) throws Exception {
 
         final Name typeName = featureType.getName();
-        List<String> path = Arrays.asList(typeName.getNamespaceURI(), typeName.getLocalPart());
+        List<String> path = ImmutableList.of(typeName.getLocalPart());
         index.created(path);
     }
 
     public void delete(final Name typeName) throws Exception {
-        index.deleted(typeName.getNamespaceURI(), typeName.getLocalPart());
+        index.deleted(typeName.getLocalPart());
     }
 
     private List<String> path(final Name typeName, final String id) {
         List<String> path = new ArrayList<String>(3);
-        if (typeName.getNamespaceURI() != null) {
-            path.add(typeName.getNamespaceURI());
-        }
         path.add(typeName.getLocalPart());
         if (id != null) {
             path.add(id);
@@ -167,8 +167,7 @@ public class WorkingTree {
                     id = UUID.randomUUID().toString();
                 }
             }
-            final List<String> path = Arrays.asList(typeName.getNamespaceURI(),
-                    typeName.getLocalPart(), id);
+            final List<String> path = ImmutableList.of(typeName.getLocalPart(), id);
 
             return new Triplet<ObjectWriter<?>, BoundingBox, List<String>>(featureWriter, bounds,
                     path);
@@ -195,9 +194,8 @@ public class WorkingTree {
     }
 
     public boolean hasRoot(final Name typeName) {
-        String namespaceURI = typeName.getNamespaceURI() == null ? "" : typeName.getNamespaceURI();
         String localPart = typeName.getLocalPart();
-        NodeRef typeNameTreeRef = repository.getRootTreeChild(namespaceURI, localPart);
+        NodeRef typeNameTreeRef = repository.getRootTreeChild(localPart);
         return typeNameTreeRef != null;
     }
 
@@ -205,13 +203,12 @@ public class WorkingTree {
             final FeatureCollection affectedFeatures) throws Exception {
 
         final StagingArea index = repository.getIndex();
-        String namespaceURI = typeName.getNamespaceURI();
         String localPart = typeName.getLocalPart();
         FeatureIterator iterator = affectedFeatures.features();
         try {
             while (iterator.hasNext()) {
                 String id = iterator.next().getIdentifier().getID();
-                index.deleted(namespaceURI, localPart, id);
+                index.deleted(localPart, id);
             }
         } finally {
             iterator.close();
@@ -224,20 +221,47 @@ public class WorkingTree {
     public List<Name> getFeatureTypeNames() {
         List<Name> names = new ArrayList<Name>();
         RevTree root = repository.getHeadTree();
+        final List<Name> typeNames = Lists.newLinkedList();
         if (root != null) {
-            Iterator<NodeRef> namespaces = root.iterator(null);
-            while (namespaces.hasNext()) {
-                final NodeRef nsRef = namespaces.next();
-                final String nsUri = nsRef.getName();
-                final ObjectId nsTreeId = nsRef.getObjectId();
-                final RevTree nsTree = repository.getTree(nsTreeId);
-                final Iterator<NodeRef> typeNameRefs = nsTree.iterator(null);
-                while (typeNameRefs.hasNext()) {
-                    Name typeName = new NameImpl(nsUri, typeNameRefs.next().getName());
-                    names.add(typeName);
+            root.accept(new TreeVisitor() {
+
+                @Override
+                public boolean visitSubTree(int bucket, ObjectId treeId) {
+                    return false;
                 }
-            }
+
+                @Override
+                public boolean visitEntry(NodeRef ref) {
+                    if (TYPE.TREE.equals(ref.getType())) {
+                        if (!ref.getMetadataId().isNull()) {
+                            ObjectId metadataId = ref.getMetadataId();
+                            ObjectReader<SimpleFeatureType> typeReader = index.getDatabase()
+                                    .getSerialFactory().createSimpleFeatureTypeReader();
+                            StagingDatabase database = index.getDatabase();
+                            SimpleFeatureType type = database.get(metadataId, typeReader);
+                            typeNames.add(type.getName());
+                        }
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            });
         }
+        // if (root != null) {
+        // Iterator<NodeRef> namespaces = root.iterator(null);
+        // while (namespaces.hasNext()) {
+        // final NodeRef nsRef = namespaces.next();
+        // final String nsUri = nsRef.getName();
+        // final ObjectId nsTreeId = nsRef.getObjectId();
+        // final RevTree nsTree = repository.getTree(nsTreeId);
+        // final Iterator<NodeRef> typeNameRefs = nsTree.iterator(null);
+        // while (typeNameRefs.hasNext()) {
+        // Name typeName = new NameImpl(nsUri, typeNameRefs.next().getName());
+        // names.add(typeName);
+        // }
+        // }
+        // }
         return names;
     }
 

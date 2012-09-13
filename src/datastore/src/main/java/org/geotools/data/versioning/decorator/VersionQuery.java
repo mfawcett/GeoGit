@@ -25,14 +25,14 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.geogit.api.DiffEntry;
-import org.geogit.api.DiffOp;
 import org.geogit.api.GeoGIT;
-import org.geogit.api.LogOp;
 import org.geogit.api.NodeRef;
 import org.geogit.api.ObjectId;
 import org.geogit.api.RevCommit;
 import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevTree;
+import org.geogit.api.porcelain.DiffOp;
+import org.geogit.api.porcelain.LogOp;
 import org.geogit.repository.Repository;
 import org.geogit.storage.StagingDatabase;
 import org.geotools.data.Query;
@@ -221,9 +221,7 @@ public class VersionQuery {
         if (commit != null) {
             ObjectId commitTreeId = commit.getTreeId();
             RevTree commitTree = ggit.getRepository().getTree(commitTreeId);
-            NodeRef nsRef = commitTree.get(typeName.getNamespaceURI());
-            RevTree nsTree = ggit.getRepository().getTree(nsRef.getObjectId());
-            NodeRef typeRef = nsTree.get(typeName.getLocalPart());
+            NodeRef typeRef = commitTree.get(typeName.getLocalPart());
             RevTree typeTree = ggit.getRepository().getTree(typeRef.getObjectId());
             Iterator<NodeRef> it = typeTree.iterator(null);
 
@@ -473,9 +471,9 @@ public class VersionQuery {
 
     private List<String> typeNamePath() {
         List<String> path = new ArrayList<String>(3);
-        if (null != typeName.getNamespaceURI()) {
-            path.add(typeName.getNamespaceURI());
-        }
+        // if (null != typeName.getNamespaceURI()) {
+        // path.add(typeName.getNamespaceURI());
+        // }
         path.add(typeName.getLocalPart());
         return path;
     }

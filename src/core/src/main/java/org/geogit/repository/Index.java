@@ -25,6 +25,8 @@ import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevTree;
 import org.geogit.api.SpatialRef;
 import org.geogit.api.TreeVisitor;
+import org.geogit.api.plumbing.ResolveObjectType;
+import org.geogit.api.plumbing.RevParse;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.ObjectWriter;
 import org.geogit.storage.RawObjectWriter;
@@ -35,6 +37,7 @@ import org.opengis.util.ProgressListener;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.inject.Inject;
 
@@ -122,7 +125,7 @@ public class Index implements StagingArea {
     @Override
     public boolean deleted(String... path) throws Exception {
         Preconditions.checkNotNull(path);
-        final List<String> searchPath = Arrays.asList(path);
+        final List<String> searchPath = ImmutableList.copyOf(Arrays.asList(path));
         checkValidPath(searchPath);
 
         DiffEntry unstagedEntry;
@@ -185,7 +188,7 @@ public class Index implements StagingArea {
 
         Triplet<ObjectWriter<?>, BoundingBox, List<String>> tuple;
         tuple = new Triplet<ObjectWriter<?>, BoundingBox, List<String>>(blob, bounds,
-                Arrays.asList(path));
+                ImmutableList.copyOf(Arrays.asList(path)));
 
         List<NodeRef> inserted = new ArrayList<NodeRef>(1);
 
@@ -241,10 +244,11 @@ public class Index implements StagingArea {
 
     @Override
     public void stage(final ProgressListener progress, final String... path) throws Exception {
-        List<String> path2 = path == null ? null : Arrays.asList(path);
+        List<String> path2 = path == null ? null : ImmutableList.copyOf(Arrays.asList(path));
         final int numChanges = indexDatabase.countUnstaged(path2);
         int i = 0;
         progress.started();
+        // System.err.println("staging with path: " + path2 + ". Matches: " + numChanges);
         Iterator<DiffEntry> unstaged = indexDatabase.getUnstaged(path2);
         while (unstaged.hasNext()) {
             i++;
@@ -263,8 +267,7 @@ public class Index implements StagingArea {
 
     @Override
     public void reset() {
-        int unstagedClearedCount = indexDatabase.removeUnStaged(null);
-        int stagedClearedCount = indexDatabase.removeStaged(null);
+        indexDatabase.reset();
     }
 
     @Override
@@ -284,31 +287,45 @@ public class Index implements StagingArea {
         Preconditions.checkNotNull(progress,
                 "null ProgressListener. Use new NullProgressListener() instead");
 
-        final ObjectDatabase repositoryDatabase = repository.getObjectDatabase();
-
         // resolve target ref to the target root tree id
         final Ref targetRootTreeRef;
-        if (TYPE.TREE.equals(targetRef.getType())) {
-            targetRootTreeRef = targetRef;
-        } else if (TYPE.COMMIT.equals(targetRef.getType())) {
-            if (targetRef.getObjectId().isNull()) {
-                targetRootTreeRef = new Ref(targetRef.getName(), ObjectId.NULL, TYPE.TREE);
-            } else {
-                RevCommit commit = repository.getCommit(targetRef.getObjectId());
+
+        final ObjectId targetObjectId = repository.command(RevParse.class)
+                .setRefSpec(targetRef.getName()).call();
+
+        if (targetObjectId.isNull()) {
+            targetRootTreeRef = new Ref(targetRef.getName(), ObjectId.NULL, TYPE.TREE);
+        } else {
+            final TYPE type = repository.command(ResolveObjectType.class)
+                    .setObjectId(targetObjectId).call();
+
+            if (TYPE.TREE.equals(type)) {
+                targetRootTreeRef = targetRef;
+            } else if (TYPE.COMMIT.equals(type)) {
+                RevCommit commit = repository.getCommit(targetObjectId);
                 ObjectId targetTeeId = commit.getTreeId();
                 targetRootTreeRef = new Ref(targetRef.getName(), targetTeeId, TYPE.TREE);
+            } else {
+                throw new IllegalStateException("target ref is not a commit nor a tree");
             }
-        } else {
-            throw new IllegalStateException("target ref is not a commit nor a tree");
         }
 
         final ObjectId toTreeId = targetRootTreeRef.getObjectId();
-        final RevTree oldRoot = repository.getTree(toTreeId);
+        return writeTree(toTreeId, progress);
+    }
+
+    @Override
+    public Tuple<ObjectId, BoundingBox> writeTree(final ObjectId targetTreeId,
+            final ProgressListener progress) throws Exception {
+
+        final ObjectDatabase repositoryDatabase = repository.getObjectDatabase();
+
+        final RevTree oldRoot = repository.getTree(targetTreeId);
 
         List<String> pathFilter = null;
         final int numChanges = indexDatabase.countStaged(pathFilter);
         if (numChanges == 0) {
-            return new Tuple<ObjectId, BoundingBox>(toTreeId, null);
+            return new Tuple<ObjectId, BoundingBox>(targetTreeId, null);
         }
         if (progress.isCanceled()) {
             return null;
@@ -359,7 +376,7 @@ public class Index implements StagingArea {
             return null;
         }
         // now write back all changed trees
-        ObjectId newTargetRootId = toTreeId;
+        ObjectId newTargetRootId = targetTreeId;
         for (Map.Entry<List<String>, MutableTree> e : changedTrees.entrySet()) {
             List<String> treePath = e.getKey();
             MutableTree tree = e.getValue();
