@@ -1,4 +1,4 @@
-package org.geogit.storage;
+package org.geogit.api.porcelain;
 
 @SuppressWarnings("serial")
 public class ConfigException extends RuntimeException {
@@ -6,13 +6,13 @@ public class ConfigException extends RuntimeException {
         INVALID_LOCATION, CANNOT_WRITE, SECTION_OR_NAME_NOT_PROVIDED, SECTION_OR_KEY_INVALID, OPTION_DOES_N0T_EXIST, MULTIPLE_OPTIONS_MATCH, INVALID_REGEXP, USERHOME_NOT_SET
     }
 
-    public ConfigException.StatusCode statusCode;
+    public StatusCode statusCode;
 
-    public ConfigException(ConfigException.StatusCode statusCode) {
+    public ConfigException(StatusCode statusCode) {
         this(null, statusCode);
     }
 
-    public ConfigException(Exception e, ConfigException.StatusCode statusCode) {
+    public ConfigException(Exception e, StatusCode statusCode) {
         super(e);
         this.statusCode = statusCode;
     }

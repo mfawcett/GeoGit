@@ -8,11 +8,11 @@ package org.geogit.cli.porcelain;
 import java.util.List;
 
 import org.geogit.api.GeoGIT;
+import org.geogit.api.porcelain.ConfigException;
 import org.geogit.api.porcelain.ConfigOp;
 import org.geogit.cli.AbstractCommand;
 import org.geogit.cli.CLICommand;
 import org.geogit.cli.GeogitCLI;
-import org.geogit.storage.ConfigException;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;

@@ -7,9 +7,9 @@ import java.net.URL;
 
 import org.geogit.api.Platform;
 import org.geogit.api.plumbing.ResolveGeogitDir;
+import org.geogit.api.porcelain.ConfigException;
+import org.geogit.api.porcelain.ConfigException.StatusCode;
 import org.geogit.storage.ConfigDatabase;
-import org.geogit.storage.ConfigException;
-import org.geogit.storage.ConfigException.StatusCode;
 import org.ini4j.Wini;
 
 import com.google.common.base.Optional;
@@ -92,7 +92,11 @@ public class IniConfigDatabase implements ConfigDatabase {
         final SectionOptionPair pair = new SectionOptionPair(key);
         try {
             final Wini ini = new Wini(file);
-            return Optional.of(ini.get(pair.section, pair.option, c));
+            T value = ini.get(pair.section, pair.option, c);
+            if (value == null)
+                return Optional.absent();
+
+            return Optional.of(value);
         } catch (Exception e) {
             throw new ConfigException(e, StatusCode.INVALID_LOCATION);
         }

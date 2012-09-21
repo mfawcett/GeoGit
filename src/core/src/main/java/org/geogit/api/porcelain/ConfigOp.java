@@ -3,9 +3,8 @@ package org.geogit.api.porcelain;
 import java.util.List;
 
 import org.geogit.api.AbstractGeoGitOp;
+import org.geogit.api.porcelain.ConfigException.StatusCode;
 import org.geogit.storage.ConfigDatabase;
-import org.geogit.storage.ConfigException;
-import org.geogit.storage.ConfigException.StatusCode;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
