@@ -1,29 +1,19 @@
 package org.geogit.storage;
 
+import com.google.common.base.Optional;
+
 public interface ConfigDatabase {
-    public enum StatusCode {
-        INVALID_LOCATION, CANNOT_WRITE, SECTION_OR_NAME_NOT_PROVIDED, SECTION_OR_KEY_INVALID, OPTION_DOES_N0T_EXIST, MULTIPLE_OPTIONS_MATCH, INVALID_REGEXP, USERHOME_NOT_SET
-    }
 
-    @SuppressWarnings("serial")
-    public class ConfigException extends Exception {
-        public StatusCode statusCode;
+    public Optional<String> get(String key);
 
-        public ConfigException(StatusCode statusCode) {
-            this.statusCode = statusCode;
-        }
-    }
+    public Optional<String> getGlobal(String key);
 
-    public String get(String key) throws ConfigException;
+    public <T> Optional<T> get(String key, Class<T> c);
 
-    public String getGlobal(String key) throws ConfigException;
+    public <T> Optional<T> getGlobal(String key, Class<T> c);
 
-    public <T> T get(String key, Class<T> c) throws ConfigException;
+    public void put(String key, Object value);
 
-    public <T> T getGlobal(String key, Class<T> c) throws ConfigException;
-
-    public void put(String key, Object value) throws ConfigException;
-
-    public void putGlobal(String key, Object value) throws ConfigException;
+    public void putGlobal(String key, Object value);
 
 }

@@ -7,15 +7,16 @@ package org.geogit.cli.porcelain;
 
 import java.util.List;
 
-import org.geogit.api.ConfigOp;
 import org.geogit.api.GeoGIT;
+import org.geogit.api.porcelain.ConfigOp;
 import org.geogit.cli.AbstractCommand;
 import org.geogit.cli.CLICommand;
 import org.geogit.cli.GeogitCLI;
-import org.geogit.storage.ConfigDatabase.ConfigException;
+import org.geogit.storage.ConfigException;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.base.Optional;
 
 /**
  * @author mfawcett
@@ -44,17 +45,18 @@ public class Config extends AbstractCommand implements CLICommand {
         }
 
         try {
-            final String value = geogit.command(ConfigOp.class).setGet(get).setGlobal(global)
+            final Optional<String> value = geogit.command(ConfigOp.class).setGet(get).setGlobal(global)
                     .setNameValuePair(nameValuePair).call();
 
-            if (value != null) {
-                cli.getConsole().println(value);
+            if (value.isPresent()) {
+                cli.getConsole().println(value.get());
             }
         } catch (ConfigException e) {
             // These mirror 'git config' status codes. Some of these are unused,
             // since we don't have regex support yet.
             switch (e.statusCode) {
             case INVALID_LOCATION:
+                // TODO: This could probably be more descriptive.
                 cli.getConsole().println("The config location is invalid");
                 break;
             case CANNOT_WRITE:

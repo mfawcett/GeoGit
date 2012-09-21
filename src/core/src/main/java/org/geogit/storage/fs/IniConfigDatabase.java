@@ -1,4 +1,4 @@
-package org.geogit.storage;
+package org.geogit.storage.fs;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,8 +7,12 @@ import java.net.URL;
 
 import org.geogit.api.Platform;
 import org.geogit.api.plumbing.ResolveGeogitDir;
+import org.geogit.storage.ConfigDatabase;
+import org.geogit.storage.ConfigException;
+import org.geogit.storage.ConfigException.StatusCode;
 import org.ini4j.Wini;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 
 public class IniConfigDatabase implements ConfigDatabase {
@@ -25,7 +29,7 @@ public class IniConfigDatabase implements ConfigDatabase {
 
         String option;
 
-        public SectionOptionPair(String key) throws ConfigException {
+        public SectionOptionPair(String key) {
             final int index = key.indexOf('.');
 
             if (index == -1) {
@@ -41,7 +45,7 @@ public class IniConfigDatabase implements ConfigDatabase {
         }
     }
 
-    private File config() throws ConfigException {
+    private File config() {
         final URL url = new ResolveGeogitDir(platform).call();
 
         if (url == null) {
@@ -58,13 +62,13 @@ public class IniConfigDatabase implements ConfigDatabase {
         try {
             f.createNewFile();
         } catch (IOException e) {
-            throw new ConfigException(StatusCode.CANNOT_WRITE);
+            throw new ConfigException(e, StatusCode.CANNOT_WRITE);
         }
 
         return f;
     }
 
-    private File globalConfig() throws ConfigException {
+    private File globalConfig() {
         File home = platform.getUserHome();
 
         if (home == null) {
@@ -75,12 +79,12 @@ public class IniConfigDatabase implements ConfigDatabase {
         try {
             f.createNewFile();
         } catch (IOException e) {
-            throw new ConfigException(StatusCode.CANNOT_WRITE);
+            throw new ConfigException(e, StatusCode.CANNOT_WRITE);
         }
         return f;
     }
 
-    private <T> T get(String key, File file, Class<T> c) throws ConfigException {
+    private <T> Optional<T> get(String key, File file, Class<T> c) {
         if (key == null) {
             throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
         }
@@ -88,50 +92,50 @@ public class IniConfigDatabase implements ConfigDatabase {
         final SectionOptionPair pair = new SectionOptionPair(key);
         try {
             final Wini ini = new Wini(file);
-            return ini.get(pair.section, pair.option, c);
+            return Optional.of(ini.get(pair.section, pair.option, c));
         } catch (Exception e) {
-            throw new ConfigException(StatusCode.INVALID_LOCATION);
+            throw new ConfigException(e, StatusCode.INVALID_LOCATION);
         }
     }
 
-    private void put(String key, Object value, File file) throws ConfigException {
+    private void put(String key, Object value, File file) {
         final SectionOptionPair pair = new SectionOptionPair(key);
         try {
             final Wini ini = new Wini(file);
             ini.put(pair.section, pair.option, value);
             ini.store();
         } catch (Exception e) {
-            throw new ConfigException(StatusCode.INVALID_LOCATION);
+            throw new ConfigException(e, StatusCode.INVALID_LOCATION);
         }
     }
 
     @Override
-    public String get(String key) throws ConfigException {
+    public Optional<String> get(String key) {
         return get(key, config(), String.class);
     }
 
     @Override
-    public String getGlobal(String key) throws ConfigException {
+    public Optional<String> getGlobal(String key) {
         return get(key, globalConfig(), String.class);
     }
 
     @Override
-    public <T> T get(String key, Class<T> c) throws ConfigException {
+    public <T> Optional<T> get(String key, Class<T> c) {
         return get(key, config(), c);
     }
 
     @Override
-    public <T> T getGlobal(String key, Class<T> c) throws ConfigException {
+    public <T> Optional<T> getGlobal(String key, Class<T> c) {
         return get(key, globalConfig(), c);
     }
 
     @Override
-    public void put(String key, Object value) throws ConfigException {
+    public void put(String key, Object value) {
         put(key, value, config());
     }
 
     @Override
-    public void putGlobal(String key, Object value) throws ConfigException {
+    public void putGlobal(String key, Object value) {
         put(key, value, globalConfig());
     }
 

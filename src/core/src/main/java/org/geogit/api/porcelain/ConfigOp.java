@@ -1,14 +1,16 @@
-package org.geogit.api;
+package org.geogit.api.porcelain;
 
 import java.util.List;
 
+import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.storage.ConfigDatabase;
-import org.geogit.storage.ConfigDatabase.ConfigException;
-import org.geogit.storage.ConfigDatabase.StatusCode;
+import org.geogit.storage.ConfigException;
+import org.geogit.storage.ConfigException.StatusCode;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 
-public class ConfigOp extends AbstractGeoGitOp<String> {
+public class ConfigOp extends AbstractGeoGitOp<Optional<String>> {
 
     private boolean global;
 
@@ -24,7 +26,7 @@ public class ConfigOp extends AbstractGeoGitOp<String> {
     }
 
     @Override
-    public String call() throws ConfigException {
+    public Optional<String> call() {
         if (nameValuePair == null) {
             throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
         }
@@ -32,14 +34,14 @@ public class ConfigOp extends AbstractGeoGitOp<String> {
         // Alternate syntax is to omit '--get' and only provide section.key, no value
         if (get || nameValuePair.size() == 1) {
             String name = nameValuePair.get(0);
-            String value;
+            Optional<String> value;
             if (global) {
                 value = config.getGlobal(name);
             } else {
                 value = config.get(name);
             }
 
-            if (value == null) {
+            if (!value.isPresent()) {
                 throw new ConfigException(StatusCode.SECTION_OR_KEY_INVALID);
             }
 
@@ -56,7 +58,7 @@ public class ConfigOp extends AbstractGeoGitOp<String> {
             }
         }
 
-        return null;
+        return Optional.absent();
     }
 
     public boolean getGlobal() {

@@ -12,9 +12,9 @@ import org.geogit.repository.Repository;
 import org.geogit.repository.StagingArea;
 import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.FileRefDatabase;
-import org.geogit.storage.IniConfigDatabase;
 import org.geogit.storage.ObjectSerialisingFactory;
 import org.geogit.storage.RefDatabase;
+import org.geogit.storage.fs.IniConfigDatabase;
 import org.geogit.storage.hessian.HessianFactory;
 
 import com.google.inject.AbstractModule;
