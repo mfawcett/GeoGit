@@ -11,6 +11,7 @@ import org.geogit.cli.porcelain.Checkout;
 import org.geogit.cli.porcelain.CherryPick;
 import org.geogit.cli.porcelain.Commit;
 import org.geogit.cli.porcelain.Config;
+import org.geogit.cli.porcelain.Diff;
 import org.geogit.cli.porcelain.Help;
 import org.geogit.cli.porcelain.Init;
 import org.geogit.cli.porcelain.Log;
@@ -26,7 +27,11 @@ import com.google.inject.AbstractModule;
  * @see Checkout
  * @see CherryPick
  * @see Commit
+<<<<<<< HEAD
  * @see Config
+=======
+ * @see Diff
+>>>>>>> 6ce38ad65e7911884b6f27ac2bc3379b0077669e
  * @see Help
  * @see Init
  * @see Log
@@ -43,6 +48,7 @@ public class BuiltinCommandsModule extends AbstractModule implements CLIModule {
         bind(CherryPick.class);
         bind(Commit.class);
         bind(Config.class);
+        bind(Diff.class);
         bind(Help.class);
         bind(Init.class);
         bind(Log.class);
