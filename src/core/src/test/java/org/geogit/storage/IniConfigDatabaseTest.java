@@ -38,12 +38,8 @@ public class IniConfigDatabaseTest {
 
         final ConfigDatabase ini = new IniConfigDatabase(platform);        
         
-        // Test get when config file doesn't even exist yet
-        final String none = ini.get("section.int");
-        assertEquals(none, null);
-        
         // Test integer and string
-        ini.put("section.int", "1");
+        ini.put("section.int", 1);
         ini.put("section.string", "2");
 
         final int one = ini.get("section.int", int.class);
@@ -67,10 +63,6 @@ public class IniConfigDatabaseTest {
         when(platform.getUserHome()).thenReturn(userhome);
         
         final ConfigDatabase ini = new IniConfigDatabase(platform);
-        
-        // Test get when config file doesn't even exist yet
-        final String none = ini.getGlobal("section.int");
-        assertEquals(none, null);
         
         // Test integer and string
         ini.putGlobal("section.int", 1);
