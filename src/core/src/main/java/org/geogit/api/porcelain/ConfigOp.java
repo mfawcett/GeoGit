@@ -26,7 +26,7 @@ public class ConfigOp extends AbstractGeoGitOp<Optional<String>> {
 
     @Override
     public Optional<String> call() {
-        if (nameValuePair == null) {
+        if (nameValuePair == null || nameValuePair.isEmpty()) {
             throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
         }
 
@@ -40,14 +40,10 @@ public class ConfigOp extends AbstractGeoGitOp<Optional<String>> {
                 value = config.get(name);
             }
 
-            if (!value.isPresent()) {
-                throw new ConfigException(StatusCode.SECTION_OR_KEY_INVALID);
-            }
-
             return value;
         } else {
-            if (nameValuePair.size() != 2) {
-                throw new ConfigException(StatusCode.SECTION_OR_NAME_NOT_PROVIDED);
+            if (nameValuePair.size() > 2) {
+                throw new ConfigException(StatusCode.SECTION_OR_KEY_INVALID);
             }
 
             if (global) {
