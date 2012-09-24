@@ -199,4 +199,18 @@ public class IniConfigDatabaseTest {
         exception.expect(IllegalArgumentException.class);
         ini.get("section.string", int.class);
     }
+
+    @Test
+    public void testNoValue() {
+        final File workingDir = tempFolder.newFolder("mockWorkingDir");
+        tempFolder.newFolder("mockWorkingDir/.geogit");
+
+        final Platform platform = mock(Platform.class);
+        when(platform.pwd()).thenReturn(workingDir);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        Optional<String> str = ini.get("doesnt.exist");
+        assertFalse(str.isPresent());
+    }
 }

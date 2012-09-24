@@ -97,6 +97,9 @@ public class IniConfigDatabase implements ConfigDatabase {
             final Wini ini = new Wini(file);
             T value = ini.get(pair.section, pair.option, c);
 
+            if (value == null)
+                return Optional.absent();
+            
             if (c == String.class && ((String) value).length() == 0)
                 return Optional.absent();
 
