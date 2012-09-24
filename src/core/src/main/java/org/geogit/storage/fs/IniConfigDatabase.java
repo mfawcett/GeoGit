@@ -52,6 +52,9 @@ public class IniConfigDatabase implements ConfigDatabase {
             throw new ConfigException(StatusCode.INVALID_LOCATION);
         }
 
+        /*
+         * See http://weblogs.java.net/blog/kohsuke/archive/2007/04/how_to_convert.html for explanation on this idiom.
+         */
         File f;
         try {
             f = new File(new File(url.toURI()), "config");
@@ -93,10 +96,13 @@ public class IniConfigDatabase implements ConfigDatabase {
         try {
             final Wini ini = new Wini(file);
             T value = ini.get(pair.section, pair.option, c);
-            if (value == null)
+
+            if (c == String.class && ((String) value).length() == 0)
                 return Optional.absent();
 
             return Optional.of(value);
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             throw new ConfigException(e, StatusCode.INVALID_LOCATION);
         }

@@ -1,22 +1,30 @@
 package org.geogit.storage.fs;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 
 import org.geogit.api.Platform;
+import org.geogit.api.porcelain.ConfigException;
 import org.geogit.storage.ConfigDatabase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+
+import com.google.common.base.Optional;
 
 // TODO: Not sure if this belongs in porcelain or integration
 
 public class IniConfigDatabaseTest {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
@@ -81,4 +89,114 @@ public class IniConfigDatabaseTest {
         assertEquals(three, "3");
     }
 
+    @Test
+    public void testNoDot() {
+        final File workingDir = tempFolder.newFolder("mockWorkingDir");
+        tempFolder.newFolder("mockWorkingDir/.geogit");
+
+        final Platform platform = mock(Platform.class);
+        when(platform.pwd()).thenReturn(workingDir);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        exception.expect(ConfigException.class);
+        ini.get("nodot");
+    }
+
+    @Test
+    public void testNoSection() {
+        final File workingDir = tempFolder.newFolder("mockWorkingDir");
+        tempFolder.newFolder("mockWorkingDir/.geogit");
+
+        final Platform platform = mock(Platform.class);
+        when(platform.pwd()).thenReturn(workingDir);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        exception.expect(ConfigException.class);
+        ini.get(".int");
+    }
+
+    @Test
+    public void testNoKey() {
+        final File workingDir = tempFolder.newFolder("mockWorkingDir");
+        tempFolder.newFolder("mockWorkingDir/.geogit");
+
+        final Platform platform = mock(Platform.class);
+        when(platform.pwd()).thenReturn(workingDir);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        exception.expect(ConfigException.class);
+        ini.get("section.");
+    }
+
+    @Test
+    public void testNoRepository() {
+        final File workingDir = tempFolder.newFolder("mockWorkingDir");
+        final Platform platform = mock(Platform.class);
+        when(platform.pwd()).thenReturn(workingDir);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        exception.expect(ConfigException.class);
+        ini.put("section.int", 1);
+    }
+
+    @Test
+    public void testNoUserHome() {
+        final Platform platform = mock(Platform.class);
+        when(platform.getUserHome()).thenReturn(null);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        exception.expect(ConfigException.class);
+        ini.putGlobal("section.int", 1);
+    }
+
+    @Test
+    public void testNullSectionKeyPair() {
+        final File workingDir = tempFolder.newFolder("mockWorkingDir");
+        tempFolder.newFolder("mockWorkingDir/.geogit");
+
+        final Platform platform = mock(Platform.class);
+        when(platform.pwd()).thenReturn(workingDir);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        exception.expect(ConfigException.class);
+        ini.get(null);
+    }
+
+    @Test
+    public void testNullValue() {
+        final File workingDir = tempFolder.newFolder("mockWorkingDir");
+        tempFolder.newFolder("mockWorkingDir/.geogit");
+
+        final Platform platform = mock(Platform.class);
+        when(platform.pwd()).thenReturn(workingDir);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        ini.put("section.null", null);
+
+        Optional<String> str = ini.get("section.null");
+        assertFalse(str.isPresent());
+    }
+
+    @Test
+    public void testNumberFormatException() {
+        final File workingDir = tempFolder.newFolder("mockWorkingDir");
+        tempFolder.newFolder("mockWorkingDir/.geogit");
+
+        final Platform platform = mock(Platform.class);
+        when(platform.pwd()).thenReturn(workingDir);
+
+        final ConfigDatabase ini = new IniConfigDatabase(platform);
+
+        ini.put("section.string", "notanumber");
+
+        exception.expect(IllegalArgumentException.class);
+        ini.get("section.string", int.class);
+    }
 }
