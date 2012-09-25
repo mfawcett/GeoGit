@@ -122,34 +122,84 @@ public class IniConfigDatabase implements ConfigDatabase {
         }
     }
 
+    /**
+     * Queries the repository config file for a particular name.
+     * 
+     * @param key String in "section.key" format to query for
+     * @return The value of the key if found, otherwise an empty Optional
+     * @throws ConfigException if an error is encountered
+     */
     @Override
     public Optional<String> get(String key) {
         return get(key, config(), String.class);
     }
 
+    /**
+     * Queries the global config file for a particular name.
+     * 
+     * @param key String in "section.key" format to query for
+     * @return The value of the key if found, otherwise an empty Optional
+     * @throws ConfigException if an error is encountered
+     */
     @Override
     public Optional<String> getGlobal(String key) {
         return get(key, globalConfig(), String.class);
     }
 
+    /**
+     * Queries the repository config file for a particular name.
+     * 
+     * @param key String in "section.key" format to query for
+     * @param c The type to return the value as
+     * @return The value of the key if found, otherwise an empty Optional
+     * @throws IllegalArgumentException if unable to return value as type c
+     * @throws ConfigException if an error is encountered
+     */
     @Override
     public <T> Optional<T> get(String key, Class<T> c) {
         return get(key, config(), c);
     }
 
+    /**
+     * Queries the global config file for a particular name.
+     * 
+     * @param key String in "section.key" format to query for
+     * @param c The type to return the value as
+     * @return The value of the key if found, otherwise an empty Optional
+     * @throws IllegalArgumentException if unable to return value as type c
+     * @throws ConfigException if an error is encountered
+     */
     @Override
     public <T> Optional<T> getGlobal(String key, Class<T> c) {
         return get(key, globalConfig(), c);
     }
 
+    /**
+     * Sets a value in the repository config file, e.g. put("section.key", "value")
+     * Resulting config file would look like:
+     * [section]
+     * key = value
+     * 
+     * @param key String in "section.key" format to set
+     * @param value The value to set
+     * @throws ConfigException if an error is encountered
+     */
     @Override
     public void put(String key, Object value) {
         put(key, value, config());
     }
 
+    /**
+     * Sets a value in the global config file
+     * 
+     * @param key String in "section.key" format to set
+     * @param value The value to set
+     * @throws ConfigException if an error is encountered
+     */
     @Override
     public void putGlobal(String key, Object value) {
         put(key, value, globalConfig());
     }
 
 }
+

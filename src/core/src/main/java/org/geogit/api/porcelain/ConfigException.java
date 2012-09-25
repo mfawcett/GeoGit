@@ -1,5 +1,10 @@
 package org.geogit.api.porcelain;
 
+/**
+ * @author mfawcett
+ * 
+ * Exception thrown by ConfigDatabase that contains the error status code.
+ */
 @SuppressWarnings("serial")
 public class ConfigException extends RuntimeException {
     public enum StatusCode {

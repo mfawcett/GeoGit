@@ -21,6 +21,7 @@ import com.google.common.base.Optional;
 /**
  * @author mfawcett
  * 
+ * CLI proxy for {@link ConfigOp}
  */
 @Parameters(commandNames = "config", commandDescription = "Get and set repository or global options")
 public class Config extends AbstractCommand implements CLICommand {
@@ -29,10 +30,10 @@ public class Config extends AbstractCommand implements CLICommand {
             + "For reading options: read only from global ~/.geogitconfig rather than from all available files.")
     private boolean global = false;
 
-    @Parameter(names = "--get", description = "Get the value for a given key. Returns error code 1 if the key was not found and error code 2 if multiple key values were found.")
+    @Parameter(names = "--get", description = "Get the value for a given key.")
     private boolean get = false;
 
-    @Parameter(description = "name value")
+    @Parameter(description = "name value (name is section.key format, value is only required when setting)")
     private List<String> nameValuePair;
 
     @Override
@@ -86,3 +87,4 @@ public class Config extends AbstractCommand implements CLICommand {
     }
 
 }
+

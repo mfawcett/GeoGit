@@ -9,6 +9,17 @@ import org.geogit.storage.ConfigDatabase;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 
+/**
+ * @author mfawcett
+ * 
+ * Get and set repository or global options
+ * <p>
+ * You can query/set options with this command.  The name is actually the section and key separated by a dot.
+ * <p>
+ * Global options are usually stored in ~/.geogitconfig.  Repository options will be stored in repo/.geogit/config
+ * 
+ * @see ConfigDatabase
+ */
 public class ConfigOp extends AbstractGeoGitOp<Optional<String>> {
 
     private boolean global;
@@ -19,11 +30,20 @@ public class ConfigOp extends AbstractGeoGitOp<Optional<String>> {
 
     final private ConfigDatabase config;
 
+    /**
+     * @param config where to store the options
+     */
     @Inject
     public ConfigOp(ConfigDatabase config) {
         this.config = config;
     }
 
+    /**
+     * @return Optional<String> if querying for a value, empty Optional if no matching name was found
+     *         or if setting a value. 
+     * @throws ConfigException if an error is encountered.  More specific information can be found
+     *         in the exception's statusCode.
+     */
     @Override
     public Optional<String> call() {
         if (nameValuePair == null || nameValuePair.isEmpty()) {
@@ -78,6 +98,10 @@ public class ConfigOp extends AbstractGeoGitOp<Optional<String>> {
         return nameValuePair;
     }
 
+    /**
+     * @param nameValuePair { 'section.key', ['value'] } - value is optional (only used if setting)
+     */
+    // TODO: Split this into two methods, setName, and setValue
     public ConfigOp setNameValuePair(List<String> nameValuePair) {
         this.nameValuePair = nameValuePair;
         return this;
