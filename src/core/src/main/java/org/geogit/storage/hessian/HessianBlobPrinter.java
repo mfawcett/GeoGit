@@ -32,14 +32,13 @@ import com.vividsolutions.jts.io.WKTWriter;
 class HessianBlobPrinter extends HessianRevReader implements BlobPrinter {
 
     /**
-     * This keeps a reference to the tags that have been opened to prevent me from making typos that
-     * break the well-formedness of the xml output.
+     * This keeps a reference to the tags that have been opened to prevent me from making typos that break the well-formedness of the xml output.
      */
     Stack<EntityState> entityStack;
 
     /**
-     * This evil little guy tracks whether the previous entity was a closing entity that didn't line
-     * wrap. It's purely for readability in the output, not readability in the code.
+     * This evil little guy tracks whether the previous entity was a closing entity that didn't line wrap. It's purely for readability in the output,
+     * not readability in the code.
      * 
      * It will only be true when a non-wrapping tag has just been closed.
      */
@@ -180,7 +179,12 @@ class HessianBlobPrinter extends HessianRevReader implements BlobPrinter {
      *     <objectid>cffb4d4a1c9f69c972cfd5d6851cb3c2415e2fda</objectid>
      *   </parentids>
      *   <author>
-     *     <string>groldan</string>
+     *     <name>
+     *       <string>groldan</string>
+     *     </name>
+     *     <email>
+     *       <string>groldan@opengeo.org</string>
+     *     </email>
      *   </author>
      *   ...
      * </commit>
@@ -204,12 +208,27 @@ class HessianBlobPrinter extends HessianRevReader implements BlobPrinter {
             printObjectId(readObjectId(hin), out);
         }
         closeTag(out);
+
+        // <author>
         openTag("author", out);
+        openTag("name", out);
         printString(hin.readString(), out);
         closeTag(out);
+        openTag("email", out);
+        printString(hin.readString(), out);
+        closeTag(out);
+        closeTag(out);
+
+        // <committer>
         openTag("committer", out);
+        openTag("name", out);
         printString(hin.readString(), out);
         closeTag(out);
+        openTag("email", out);
+        printString(hin.readString(), out);
+        closeTag(out);
+        closeTag(out);
+
         openTag("message", out);
         printString(hin.readString(), out);
         closeTag(out);
@@ -233,9 +252,8 @@ class HessianBlobPrinter extends HessianRevReader implements BlobPrinter {
     }
 
     /**
-     * Prints an opening tag of the given entity, with the provided attributes. An EntityState
-     * object is then created and stuffed on the stack to be used to close the tag appropriately. If
-     * the tag is empty, it will not be placed on the stack for later closing.
+     * Prints an opening tag of the given entity, with the provided attributes. An EntityState object is then created and stuffed on the stack to be
+     * used to close the tag appropriately. If the tag is empty, it will not be placed on the stack for later closing.
      * 
      * @param entity
      * @param attrs

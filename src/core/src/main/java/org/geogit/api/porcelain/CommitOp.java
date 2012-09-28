@@ -21,6 +21,7 @@ import org.geogit.api.plumbing.UpdateSymRef;
 import org.geogit.repository.CommitBuilder;
 import org.geogit.repository.Repository;
 import org.geogit.repository.StagingArea;
+import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.ObjectInserter;
 
 import com.google.common.base.Optional;
@@ -28,13 +29,11 @@ import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 
 /**
- * Commits the staged changed in the index to the repository, creating a new commit pointing to the
- * new root tree resulting from moving the staged changes to the repository, and updating the HEAD
- * ref to the new commit object.
+ * Commits the staged changed in the index to the repository, creating a new commit pointing to the new root tree resulting from moving the staged
+ * changes to the repository, and updating the HEAD ref to the new commit object.
  * <p>
- * Like {@code git commit -a}, If the {@link #setAll(boolean) all} flag is set, first stages all the
- * changed objects in the index, but does not state newly created (unstaged) objects that are not
- * already staged.
+ * Like {@code git commit -a}, If the {@link #setAll(boolean) all} flag is set, first stages all the changed objects in the index, but does not state
+ * newly created (unstaged) objects that are not already staged.
  * </p>
  * 
  * @author groldan
@@ -42,17 +41,12 @@ import com.google.inject.Inject;
  */
 public class CommitOp extends AbstractGeoGitOp<RevCommit> {
 
-    private String author;
-
-    private String committer;
-
     private String message;
 
     private Long timeStamp;
 
     /**
-     * This commit's parents. Will be the current HEAD, but when we support merges it should include
-     * the equivalent to git's .git/MERGE_HEAD
+     * This commit's parents. Will be the current HEAD, but when we support merges it should include the equivalent to git's .git/MERGE_HEAD
      */
     private List<ObjectId> parents = new LinkedList<ObjectId>();
 
@@ -69,16 +63,6 @@ public class CommitOp extends AbstractGeoGitOp<RevCommit> {
         this.platform = platform;
     }
 
-    public CommitOp setAuthor(final String author) {
-        this.author = author;
-        return this;
-    }
-
-    public CommitOp setCommitter(final String committer) {
-        this.committer = committer;
-        return this;
-    }
-
     /**
      * Sets the {@link RevCommit#getMessage() commit message}.
      * 
@@ -91,8 +75,8 @@ public class CommitOp extends AbstractGeoGitOp<RevCommit> {
     }
 
     /**
-     * Sets the {@link RevCommit#getTimestamp() timestamp} the commit will be marked to, or if not
-     * set defaults to the current system time at the time {@link #call()} is called.
+     * Sets the {@link RevCommit#getTimestamp() timestamp} the commit will be marked to, or if not set defaults to the current system time at the time
+     * {@link #call()} is called.
      * 
      * @param timestamp commit timestamp, in milliseconds, as in {@link Date#getTime()}
      * @return {@code this}, to ease command chaining
@@ -103,11 +87,10 @@ public class CommitOp extends AbstractGeoGitOp<RevCommit> {
     }
 
     /**
-     * If {@code true}, tells {@link #call()} to stage all the unstaged changes that are not new
-     * object before performing the commit.
+     * If {@code true}, tells {@link #call()} to stage all the unstaged changes that are not new object before performing the commit.
      * 
-     * @param all {@code true} to {@link AddOp#setUpdateOnly(boolean) stage changes) before commit,
-     *        {@code false} to not do that. Defaults to {@code false}.
+     * @param all {@code true} to {@link AddOp#setUpdateOnly(boolean) stage changes) before commit, {@code false} to not do that. Defaults to
+     *        {@code false}.
      * @return {@code this}, to ease command chaining
      */
     public CommitOp setAll(boolean all) {
@@ -116,11 +99,9 @@ public class CommitOp extends AbstractGeoGitOp<RevCommit> {
     }
 
     /**
-     * @return the commit just applied, or {@code null} iif
-     *         {@code getProgressListener().isCanceled()}
+     * @return the commit just applied, or {@code null} iif {@code getProgressListener().isCanceled()}
      * @see org.geogit.api.AbstractGeoGitOp#call()
-     * @throws NothingToCommitException if there are no staged changes by comparing the index
-     *         staging tree and the repository HEAD tree.
+     * @throws NothingToCommitException if there are no staged changes by comparing the index staging tree and the repository HEAD tree.
      */
     public RevCommit call() throws Exception {
         // TODO: check repository is in a state that allows committing
@@ -156,7 +137,9 @@ public class CommitOp extends AbstractGeoGitOp<RevCommit> {
         {
             CommitBuilder cb = new CommitBuilder();
             cb.setAuthor(getAuthor());
+            cb.setAuthorEmail(getAuthorEmail());
             cb.setCommitter(getCommitter());
+            cb.setCommitterEmail(getCommitterEmail());
             cb.setMessage(getMessage());
             cb.setParentIds(parents);
             cb.setTreeId(newTreeId);
@@ -189,6 +172,18 @@ public class CommitOp extends AbstractGeoGitOp<RevCommit> {
         return commit;
     }
 
+    // Check repo config first. If key not present, check global config.
+    private Optional<String> getConfigValue(String key) {
+        final ConfigDatabase config = repository.getConfigDatabase();
+        Optional<String> value = config.get(key);
+
+        if (!value.isPresent()) {
+            value = config.getGlobal(key);
+        }
+
+        return value;
+    }
+
     private long getTimeStamp() {
         return timeStamp == null ? platform.currentTimeMillis() : timeStamp.longValue();
     }
@@ -198,10 +193,18 @@ public class CommitOp extends AbstractGeoGitOp<RevCommit> {
     }
 
     private String getCommitter() {
-        return committer;
+        return getConfigValue("user.name").or("");
+    }
+
+    private String getCommitterEmail() {
+        return getConfigValue("user.email").or("");
     }
 
     private String getAuthor() {
-        return author;
+        return getConfigValue("user.name").or("");
+    }
+
+    private String getAuthorEmail() {
+        return getConfigValue("user.email").or("");
     }
 }
